@@ -6,27 +6,27 @@ const colors = {
   background: '#E8F5E9'
 };
 
-export default function NivelesScreen() {
-  const { levels, areas } = useProgress();
+export default function PreguntasScreen() {
+  const { questions, lessons } = useProgress();
 
-  const renderLevel = ({ item }) => {
-    const areaName = areas.find((area) => area.id === item.areaId)?.name || 'Area';
+  const renderQuestion = ({ item }) => {
+    const lessonTitle = lessons.find((ls) => ls.id === item.lessonId)?.title || 'Leccion';
     return (
       <View style={styles.item}>
-        <Text style={styles.title}>{item.name}</Text>
-        <Text style={styles.meta}>Area: {areaName}</Text>
-        <Text style={styles.meta}>Orden: {item.order}</Text>
+        <Text style={styles.title}>{item.prompt}</Text>
+        <Text style={styles.meta}>Tipo: {item.type}</Text>
+        <Text style={styles.meta}>Leccion: {lessonTitle}</Text>
       </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Niveles</Text>
+      <Text style={styles.heading}>Preguntas</Text>
       <FlatList
-        data={levels}
+        data={questions}
         keyExtractor={(item) => item.id}
-        renderItem={renderLevel}
+        renderItem={renderQuestion}
         contentContainerStyle={{ gap: 10, paddingBottom: 20 }}
       />
     </View>

@@ -1,4 +1,4 @@
-import { Drawer } from 'expo-router/drawer';
+﻿import { Drawer } from 'expo-router/drawer';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const colors = {
@@ -16,7 +16,8 @@ export default function DrawerLayout() {
         headerTintColor: '#fff',
         drawerActiveTintColor: colors.accent,
         drawerInactiveTintColor: '#2e2e2e',
-        drawerStyle: { backgroundColor: colors.background }
+        drawerStyle: { backgroundColor: colors.background },
+        sceneContainerStyle: { backgroundColor: colors.background }
       }}
     >
       <Drawer.Screen
@@ -29,7 +30,7 @@ export default function DrawerLayout() {
       <Drawer.Screen
         name="admin"
         options={{
-          title: 'Administración',
+          title: 'Administracion',
           drawerIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />
         }}
       />

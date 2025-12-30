@@ -1,5 +1,11 @@
-import { StyleSheet, View, Text, FlatList, TouchableOpacity } from 'react-native';
+﻿import { StyleSheet, View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { useProgress } from '../../context/ProgressContext';
+
+const colors = {
+  primary: '#1B5E20',
+  accent: '#00C853',
+  background: '#E8F5E9'
+};
 
 export default function AreasScreen() {
   const { areas, unlockedLevels, lessons } = useProgress();
@@ -17,7 +23,7 @@ export default function AreasScreen() {
           <Text style={styles.meta}>{availableLevels.length} niveles desbloqueados</Text>
           <Text style={styles.meta}>{areaLessons.length} lecciones disponibles</Text>
           <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}>Ir a lecciones</Text>
+            <Text style={styles.buttonText}>Explorar</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -26,22 +32,17 @@ export default function AreasScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Áreas de aprendizaje</Text>
+      <Text style={styles.heading}>Areas de aprendizaje</Text>
       <FlatList
         data={areas}
         keyExtractor={(item) => item.id}
         renderItem={renderArea}
         contentContainerStyle={{ paddingBottom: 24, gap: 12 }}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
 }
-
-const colors = {
-  primary: '#1B5E20',
-  accent: '#00C853',
-  background: '#E8F5E9'
-};
 
 const styles = StyleSheet.create({
   container: {

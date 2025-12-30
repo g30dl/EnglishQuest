@@ -1,9 +1,10 @@
-import { Tabs } from 'expo-router';
+﻿import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const colors = {
   primary: '#1B5E20',
-  accent: '#00C853'
+  accent: '#00C853',
+  background: '#E8F5E9'
 };
 
 export default function TabsLayout() {
@@ -13,7 +14,8 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: colors.primary },
         headerTintColor: '#fff',
         tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: '#555'
+        tabBarInactiveTintColor: '#2e2e2e',
+        tabBarStyle: { backgroundColor: colors.background, borderTopColor: '#cfe9cf' }
       }}
     >
       <Tabs.Screen
@@ -27,8 +29,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="areas"
         options={{
-          title: 'Áreas',
-          tabBarLabel: 'Áreas',
+          title: 'Areas',
+          tabBarLabel: 'Areas',
           tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />
         }}
       />
