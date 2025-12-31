@@ -1,4 +1,4 @@
-﻿import { Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 
 const colors = {
   primary: '#1B5E20',
@@ -9,7 +9,6 @@ export default function AdminLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
         headerStyle: { backgroundColor: colors.primary },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '700' },

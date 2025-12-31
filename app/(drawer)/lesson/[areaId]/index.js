@@ -1,6 +1,6 @@
 import { StyleSheet, View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useProgress } from '../../../_context/ProgressContext';
+import { useProgress } from '../../../../context/ProgressContext';
 
 const colors = {
   primary: '#1B5E20',

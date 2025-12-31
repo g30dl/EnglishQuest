@@ -23,15 +23,8 @@ export default function DrawerLayout() {
       <Drawer.Screen
         name="(tabs)"
         options={{
-          title: 'Estudiante',
-          drawerIcon: ({ color, size }) => <Ionicons name="book-outline" size={size} color={color} />
-        }}
-      />
-      <Drawer.Screen
-        name="admin"
-        options={{
-          title: 'Administracion',
-          drawerIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />
+          title: 'Inicio',
+          drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />
         }}
       />
     </Drawer>

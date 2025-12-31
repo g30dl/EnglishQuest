@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useProgress } from '../../../_context/ProgressContext';
+import { useProgress } from '../../../../context/ProgressContext';
 
 const colors = {
   primary: '#1B5E20',

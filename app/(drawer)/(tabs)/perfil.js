@@ -1,5 +1,7 @@
-import { StyleSheet, View, Text } from 'react-native';
-import { useProgress } from '../../_context/ProgressContext';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useProgress } from '../../../context/ProgressContext';
+import { supabase } from '../../../lib/supabaseClient';
 
 const colors = {
   primary: '#1B5E20',
@@ -8,7 +10,13 @@ const colors = {
 };
 
 export default function PerfilScreen() {
+  const router = useRouter();
   const { xp, levelNumber, completedLessons, unlockedLevels, areas } = useProgress();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace('/(auth)/login');
+  };
 
   return (
     <View style={styles.container}>
@@ -35,6 +43,10 @@ export default function PerfilScreen() {
           </Text>
         ))}
       </View>
+
+      <TouchableOpacity style={styles.logout} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Cerrar sesion</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -82,5 +94,16 @@ const styles = StyleSheet.create({
   areaItem: {
     fontSize: 13,
     color: '#2e2e2e'
+  },
+  logout: {
+    marginTop: 8,
+    backgroundColor: '#d32f2f',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center'
+  },
+  logoutText: {
+    color: '#fff',
+    fontWeight: '700'
   }
 });
