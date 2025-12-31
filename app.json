@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "EnglishLearning",
-    "slug": "EnglishLearning",
+    "name": "EnglishQuest",
+    "slug": "EnglishQuest",
+    "scheme": "englishquest",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

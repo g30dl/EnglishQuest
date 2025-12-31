@@ -1,5 +1,6 @@
-﻿import { StyleSheet, View, Text, FlatList, TouchableOpacity } from 'react-native';
-import { useProgress } from '../../context/ProgressContext';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useProgress } from '../../_context/ProgressContext';
 
 const colors = {
   primary: '#1B5E20',
@@ -8,6 +9,7 @@ const colors = {
 };
 
 export default function AreasScreen() {
+  const router = useRouter();
   const { areas, unlockedLevels, lessons } = useProgress();
 
   const renderArea = ({ item }) => {
@@ -22,7 +24,7 @@ export default function AreasScreen() {
           <Text style={styles.areaDesc}>{item.description}</Text>
           <Text style={styles.meta}>{availableLevels.length} niveles desbloqueados</Text>
           <Text style={styles.meta}>{areaLessons.length} lecciones disponibles</Text>
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push(`/lesson/${item.id}`)}>
             <Text style={styles.buttonText}>Explorar</Text>
           </TouchableOpacity>
         </View>

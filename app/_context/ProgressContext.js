@@ -24,9 +24,29 @@ const initialLessons = [
 ];
 
 const initialQuestions = [
-  { id: 'q1', lessonId: 'ls1', type: 'reading', prompt: 'Selecciona el saludo formal', options: ['Hi', 'Hello', 'Good morning'], answerIndex: 2 },
-  { id: 'q2', lessonId: 'ls2', type: 'writing', prompt: 'Escribe el numero "seven" en ingles', answerIndex: 0 },
-  { id: 'q3', lessonId: 'ls4', type: 'listening', prompt: 'Escucha y selecciona la intencion', options: ['Check-in', 'Boarding', 'Asking directions'], answerIndex: 0 }
+  {
+    id: 'q1',
+    lessonId: 'ls1',
+    type: 'reading',
+    prompt: 'Selecciona el saludo formal',
+    options: ['Hi', 'Hello', 'Good morning'],
+    answerIndex: 2
+  },
+  {
+    id: 'q2',
+    lessonId: 'ls2',
+    type: 'writing',
+    prompt: 'Escribe el numero "seven" en ingles',
+    answerText: 'seven'
+  },
+  {
+    id: 'q3',
+    lessonId: 'ls4',
+    type: 'listening',
+    prompt: 'Escucha y selecciona la intencion',
+    options: ['Check-in', 'Boarding', 'Asking directions'],
+    answerIndex: 0
+  }
 ];
 
 const ProgressContext = createContext(null);

@@ -1,5 +1,5 @@
-﻿import { StyleSheet, View, Text } from 'react-native';
-import { useProgress } from '../../context/ProgressContext';
+import { StyleSheet, View, Text } from 'react-native';
+import { useProgress } from '../../_context/ProgressContext';
 
 const colors = {
   primary: '#1B5E20',
