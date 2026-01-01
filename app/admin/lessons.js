@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, Switch, ActivityIndicator } from 'react-native';
 import { supabase } from '../../lib/supabaseClient';
+import { useProgress } from '../../context/ProgressContext';
 
 const colors = {
   primary: '#1B5E20',
@@ -8,11 +9,12 @@ const colors = {
   background: '#E8F5E9'
 };
 
-const allowedAreas = ['vocab', 'grammar', 'listening'];
+const allowedAreas = ['vocabulario', 'gramatica', 'listening'];
 const allowedTypes = ['reading', 'writing', 'listening'];
 const levelOptions = Array.from({ length: 10 }, (_, i) => i + 1);
 
 export default function AdminLessonsScreen() {
+  const { lessons: ctxLessons, addLesson, reload, loading: ctxLoading } = useProgress();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
@@ -26,20 +28,8 @@ export default function AdminLessonsScreen() {
   const [editing, setEditing] = useState(null);
 
   useEffect(() => {
-    fetchLessons();
-  }, []);
-
-  const fetchLessons = async () => {
-    setLoading(true);
-    setMessage('');
-    const { data, error } = await supabase.from('lessons').select('*').order('order_index', { ascending: true });
-    if (error) {
-      setMessage('No se pudieron cargar lecciones');
-    } else {
-      setLessons(data || []);
-    }
-    setLoading(false);
-  };
+    setLessons(ctxLessons);
+  }, [ctxLessons]);
 
   const resetForm = () => {
     setTitle('');
@@ -82,9 +72,14 @@ export default function AdminLessonsScreen() {
         return;
       }
     }
-    setMessage('Leccion creada');
-    resetForm();
-    fetchLessons();
+    const result = await addLesson(basePayload);
+    if (result?.success) {
+      setMessage('Leccion creada');
+      resetForm();
+      reload?.();
+    } else {
+      setMessage(`No se pudo crear: ${result?.error || 'Error desconocido'}`);
+    }
   };
 
   const startEdit = (item) => {
@@ -113,20 +108,26 @@ export default function AdminLessonsScreen() {
       area,
       level: Number(level),
       description,
-      order_index: Number(order) || 0,
-      xp_reward: Number(xpReward) || 50
+      order: Number(order) || 0,
+      xp_reward: Number(xpReward) || 50,
+      type
     };
-    const first = await supabase.from('lessons').update({ ...basePayload, type }).eq('id', editing.id);
-    if (first.error) {
-      const retry = await supabase.from('lessons').update(basePayload).eq('id', editing.id);
-      if (retry.error) {
-        setMessage(`No se pudo actualizar la leccion: ${retry.error.message}`);
-        return;
-      }
+    const { error } = await supabase.from('lessons').update({
+      title: basePayload.title,
+      description: basePayload.description,
+      area: basePayload.area,
+      level: basePayload.level,
+      order_index: basePayload.order,
+      xp_reward: basePayload.xp_reward,
+      type: basePayload.type
+    }).eq('id', editing.id);
+    if (error) {
+      setMessage(`No se pudo actualizar la leccion: ${error.message}`);
+      return;
     }
     setMessage('Leccion actualizada');
     resetForm();
-    fetchLessons();
+    reload?.();
   };
 
   const handleDelete = (item) => {
@@ -153,7 +154,7 @@ export default function AdminLessonsScreen() {
             setMessage('No se pudo eliminar la leccion');
           } else {
             setMessage('Leccion eliminada');
-            fetchLessons();
+            reload?.();
           }
         }
       }
@@ -168,7 +169,7 @@ export default function AdminLessonsScreen() {
     if (error) {
       setMessage('No se pudo actualizar el estado');
     } else {
-      fetchLessons();
+      reload?.();
     }
   };
 
@@ -256,7 +257,7 @@ export default function AdminLessonsScreen() {
       </View>
 
       <Text style={styles.sub}>Lecciones existentes</Text>
-      {loading ? (
+      {loading || ctxLoading ? (
         <ActivityIndicator color={colors.primary} size="large" />
       ) : (
         <FlatList

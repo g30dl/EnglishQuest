@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { supabase } from '../../lib/supabaseClient';
+import { useProgress } from '../../context/ProgressContext';
 
 const colors = {
   primary: '#1B5E20',
@@ -8,11 +9,12 @@ const colors = {
   background: '#E8F5E9'
 };
 
-const allowedAreas = ['vocab', 'grammar', 'listening'];
+const allowedAreas = ['vocabulario', 'gramatica', 'listening'];
 const levelOptions = Array.from({ length: 10 }, (_, i) => i + 1);
 const defaultArea = 'vocab';
 
 export default function AdminLevelsScreen() {
+  const { levels: ctxLevels, addLevel, reload, loading: ctxLoading } = useProgress();
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
@@ -22,27 +24,8 @@ export default function AdminLevelsScreen() {
   const [editing, setEditing] = useState(null);
 
   useEffect(() => {
-    fetchLevels();
-  }, []);
-
-  const fetchLevels = async () => {
-    setLoading(true);
-    setMessage('');
-    const { data, error } = await supabase.from('lessons').select('id, area, level').order('level', { ascending: true });
-    if (error) {
-      setMessage('No se pudieron cargar niveles');
-      setLoading(false);
-      return;
-    }
-    const grouped = {};
-    (data || []).forEach((row) => {
-      const key = `${row.area}-${row.level}`;
-      grouped[key] = grouped[key] || { id: key, area: row.area, level: row.level, lessons: [] };
-      grouped[key].lessons.push(row.id);
-    });
-    setLevels(Object.values(grouped));
-    setLoading(false);
-  };
+    setLevels(ctxLevels);
+  }, [ctxLevels]);
 
   const handleCreate = async () => {
     if (!areaId) {
@@ -54,26 +37,19 @@ export default function AdminLevelsScreen() {
       return;
     }
     const orderNumber = Number(order) || 1;
-    const basePayload = {
-      title: name || `Nivel ${orderNumber}`,
-      area: areaId,
-      level: orderNumber,
-      order_index: orderNumber,
-      xp_reward: 50,
-      is_active: true
-    };
-    const first = await supabase.from('lessons').insert({ ...basePayload, type: 'reading' });
-    if (first.error) {
-      const retry = await supabase.from('lessons').insert(basePayload);
-      if (retry.error) {
-        setMessage(`No se pudo crear el nivel: ${retry.error.message}`);
-        return;
-      }
+    const result = await addLevel({
+      name: name || `Nivel ${orderNumber}`,
+      areaId,
+      order: orderNumber
+    });
+    if (result?.success) {
+      setMessage('Nivel creado en Supabase');
+      setName('');
+      setOrder('');
+      reload?.();
+    } else {
+      setMessage(`No se pudo crear el nivel: ${result?.error || 'Error desconocido'}`);
     }
-    setMessage('Nivel creado en Supabase');
-    setName('');
-    setOrder('');
-    fetchLevels();
   };
 
   const startEdit = (item) => {

@@ -8,21 +8,21 @@ const XP_PER_LEVEL = 500;
 
 // Fallbacks en memoria para no romper la UI si Supabase falla
 const initialAreas = [
-  { id: 'vocab', name: 'Vocabulario', description: 'Amplia tu vocabulario con practicas guiadas.', color: '#1B5E20' },
-  { id: 'grammar', name: 'Gramatica', description: 'Refuerza estructuras y tiempos verbales.', color: '#00C853' },
+  { id: 'vocabulario', name: 'Vocabulario', description: 'Amplia tu vocabulario con practicas guiadas.', color: '#1B5E20' },
+  { id: 'gramatica', name: 'Gramatica', description: 'Refuerza estructuras y tiempos verbales.', color: '#00C853' },
   { id: 'listening', name: 'Listening', description: 'Mejora la comprension auditiva con audios cortos.', color: '#4CAF50' }
 ];
 
 const initialLevels = [
-  { id: 'lvl1', areaId: 'vocab', name: 'Nivel 1', order: 1 },
-  { id: 'lvl2', areaId: 'grammar', name: 'Nivel 2', order: 2 },
+  { id: 'lvl1', areaId: 'vocabulario', name: 'Nivel 1', order: 1 },
+  { id: 'lvl2', areaId: 'gramatica', name: 'Nivel 2', order: 2 },
   { id: 'lvl3', areaId: 'listening', name: 'Nivel 3', order: 3 }
 ];
 
 const initialLessons = [
-  { id: 'ls1', levelId: 'lvl1', title: 'Saludos basicos', type: 'reading', areaId: 'vocab', level: 1, xp_reward: XP_PER_LESSON },
-  { id: 'ls2', levelId: 'lvl1', title: 'Colores y numeros', type: 'writing', areaId: 'vocab', level: 1, xp_reward: XP_PER_LESSON },
-  { id: 'ls3', levelId: 'lvl2', title: 'Present Simple vs Continuous', type: 'reading', areaId: 'grammar', level: 2, xp_reward: XP_PER_LESSON },
+  { id: 'ls1', levelId: 'lvl1', title: 'Saludos basicos', type: 'reading', areaId: 'vocabulario', level: 1, xp_reward: XP_PER_LESSON },
+  { id: 'ls2', levelId: 'lvl1', title: 'Colores y numeros', type: 'writing', areaId: 'vocabulario', level: 1, xp_reward: XP_PER_LESSON },
+  { id: 'ls3', levelId: 'lvl2', title: 'Present Simple vs Continuous', type: 'reading', areaId: 'gramatica', level: 2, xp_reward: XP_PER_LESSON },
   { id: 'ls4', levelId: 'lvl3', title: 'Dialogo en el aeropuerto', type: 'listening', areaId: 'listening', level: 3, xp_reward: XP_PER_LESSON },
   { id: 'ls5', levelId: 'lvl3', title: 'Anuncio en el avion', type: 'listening', areaId: 'listening', level: 3, xp_reward: XP_PER_LESSON }
 ];
@@ -66,10 +66,10 @@ const initialQuestions = [
 const ProgressContext = createContext(null);
 
 const normalizeArea = (area) => {
-  if (!area) return 'vocab';
+  if (!area) return 'vocabulario';
   const lower = area.toLowerCase();
-  if (lower.startsWith('vocab')) return 'vocab';
-  if (lower.startsWith('gram')) return 'grammar';
+  if (lower.startsWith('vocab')) return 'vocabulario';
+  if (lower.startsWith('gram')) return 'gramatica';
   if (lower.startsWith('list')) return 'listening';
   return lower;
 };
@@ -94,7 +94,7 @@ export function ProgressProvider({ children }) {
     return { lv, toNext };
   }, []);
 
-  const hydrateLessons = useCallback((rows) => {
+const hydrateLessons = useCallback((rows) => {
     if (!rows?.length) return initialLessons;
     return rows
       .filter((row) => row.is_active !== false)
@@ -136,25 +136,17 @@ export function ProgressProvider({ children }) {
     });
   }, []);
 
-  const hydrateLevels = useCallback((lessonData, userLevel) => {
-    const uniques = {};
-    lessonData.forEach((ls) => {
-      const key = `${ls.areaId}-${ls.level}`;
-      if (!uniques[key]) {
-        uniques[key] = {
-          id: `lvl-${ls.level}-${ls.areaId}`,
-          areaId: ls.areaId,
-          name: `Nivel ${ls.level}`,
-          order: ls.level
-        };
-      }
-    });
-    const arr = Object.values(uniques);
-    if (!arr.length) return initialLevels;
-    return arr.sort((a, b) => (a.order || 0) - (b.order || 0)).map((lvl) => ({
-      ...lvl,
-      unlocked: lvl.order <= (userLevel || 1)
+  const hydrateLevels = useCallback((rows, userLevel) => {
+    if (!rows?.length) return initialLevels;
+    const parsed = rows.map((row) => ({
+      id: row.id || `lvl-${row.order_index || row.level || 1}-${normalizeArea(row.area)}`,
+      areaId: normalizeArea(row.area),
+      name: row.name || `Nivel ${row.order_index || row.level || 1}`,
+      order: row.order_index || row.level || 1
     }));
+    return parsed
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map((lvl) => ({ ...lvl, unlocked: (lvl.order || 1) <= (userLevel || 1) }));
   }, []);
 
   const loadUserData = useCallback(async () => {
@@ -168,11 +160,17 @@ export function ProgressProvider({ children }) {
       }
       setCurrentUserId(user.id);
 
-      const [{ data: lessonsData, error: lessonsError }, { data: questionsData, error: questionsError }] =
-        await Promise.all([
-          supabase.from('lessons').select('*'),
-          supabase.from('questions').select('*')
-        ]);
+      const [
+        { data: areasData, error: areasError },
+        { data: levelsData, error: levelsError },
+        { data: lessonsData, error: lessonsError },
+        { data: questionsData, error: questionsError }
+      ] = await Promise.all([
+        supabase.from('areas').select('*'),
+        supabase.from('levels').select('*'),
+        supabase.from('lessons').select('*'),
+        supabase.from('questions').select('*')
+      ]);
 
       if (lessonsError) {
         console.warn('No se pudieron cargar lecciones, usando fallback', lessonsError.message);
@@ -181,9 +179,20 @@ export function ProgressProvider({ children }) {
         console.warn('No se pudieron cargar preguntas, usando fallback', questionsError.message);
       }
 
+      const safeAreas =
+        (areasData || []).map((a) => ({
+          id: normalizeArea(a.id || a.area || a.slug),
+          name: a.name || a.title || a.id,
+          description: a.description || '',
+          color: a.color || '#1B5E20'
+        })) || [];
+      if (safeAreas.length) setAreas(safeAreas);
+
+      const hydratedLevels = hydrateLevels(levelsData, profile?.current_level || 1);
+      setLevels(hydratedLevels.length ? hydratedLevels : initialLevels);
+
       const hydratedLessons = hydrateLessons(lessonsData);
       setLessons(hydratedLessons);
-      setLevels(hydrateLevels(hydratedLessons, profile?.current_level || 1));
       const hydratedQuestions = hydrateQuestions(questionsData);
       setQuestions(hydratedQuestions);
 
@@ -345,81 +354,111 @@ export function ProgressProvider({ children }) {
   const addLevel = useCallback(
     async (payload) => {
       try {
-        const basePayload = {
-          title: payload.name || `Nivel ${payload.order || 1}`,
+        const insertPayload = {
+          name: payload.name || `Nivel ${payload.order || 1}`,
           area: payload.areaId,
-          level: payload.order || 1,
-          order_index: payload.order || 1,
-          xp_reward: XP_PER_LESSON,
-          is_active: true
+          order_index: payload.order || 1
         };
-        const firstAttempt = await supabase.from('lessons').insert({ ...basePayload, type: payload.type || 'reading' });
-        if (firstAttempt.error) {
-          const retry = await supabase.from('lessons').insert(basePayload);
-          if (retry.error) {
-            console.warn('No se pudo crear nivel', retry.error.message);
-            return;
+        const { data, error } = await supabase.from('levels').insert(insertPayload).select().single();
+        if (error) throw error;
+        setLevels((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            areaId: normalizeArea(data.area),
+            name: data.name,
+            order: data.order_index,
+            unlocked: data.order_index <= levelNumber
           }
-        }
-        loadUserData();
+        ]);
+        return { success: true };
       } catch (err) {
         console.warn('Error inesperado al crear nivel', err.message);
+        return { success: false, error: err.message };
       }
     },
-    [loadUserData]
+    [levelNumber]
   );
 
   const addLesson = useCallback(
     async (payload) => {
       try {
-        const basePayload = {
+        const insertPayload = {
           title: payload.title,
           description: payload.description || '',
-          area: payload.areaId || payload.area || 'vocab',
+          area: payload.areaId || payload.area || 'vocabulario',
           level: payload.level || 1,
           order_index: payload.order || 0,
           xp_reward: payload.xp_reward || XP_PER_LESSON,
+          type: payload.type || 'reading',
           is_active: payload.is_active ?? true
         };
-        const firstAttempt = await supabase.from('lessons').insert({ ...basePayload, type: payload.type || 'reading' });
-        if (firstAttempt.error) {
-          const retry = await supabase.from('lessons').insert(basePayload);
-          if (retry.error) {
-            console.warn('No se pudo crear leccion', retry.error.message);
-            return;
+        const { data, error } = await supabase.from('lessons').insert(insertPayload).select().single();
+        if (error) throw error;
+        const areaId = normalizeArea(data.area);
+        setLessons((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            levelId: `lvl-${data.level || 1}-${areaId}`,
+            title: data.title,
+            type: data.type || 'reading',
+            areaId,
+            level: data.level || 1,
+            xp_reward: data.xp_reward || XP_PER_LESSON,
+            order: data.order_index || 0,
+            description: data.description || ''
           }
-        }
-        loadUserData();
+        ]);
+        return { success: true };
       } catch (err) {
         console.warn('Error inesperado al crear leccion', err.message);
+        return { success: false, error: err.message };
       }
     },
-    [loadUserData]
+    []
   );
 
   const addQuestion = useCallback(
     async (payload) => {
       try {
-        const { error } = await supabase.from('questions').insert({
-          lesson_id: payload.lessonId,
-          question_type: payload.type,
-          question_text: payload.prompt,
-          options: payload.options || null,
-          correct_answer: payload.answerText || payload.correct_answer || '',
-          answer_index: payload.answerIndex,
-          explanation: payload.explanation || '',
-          order_index: payload.order || 0
-        });
-        if (error) {
-          console.warn('No se pudo crear pregunta', error.message);
-        } else {
-          loadUserData();
-        }
+        const { data, error } = await supabase
+          .from('questions')
+          .insert({
+            lesson_id: payload.lessonId,
+            question_type: payload.type,
+            question_text: payload.prompt,
+            correct_answer: payload.answerText || payload.correct_answer || '',
+            options: payload.options || null,
+            answer_index: payload.answerIndex || null,
+            order_index: payload.order || questions.length,
+            audio_text: payload.audioText || payload.prompt
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setQuestions((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            lessonId: data.lesson_id,
+            type: data.question_type,
+            prompt: data.question_text,
+            audioText: data.audio_text || data.question_text,
+            options: data.options,
+            answerIndex: data.answer_index,
+            answerText: data.correct_answer
+          }
+        ]);
+        return { success: true };
       } catch (err) {
-        console.warn('Error inesperado al crear pregunta', err.message);
+        console.error('Error adding question:', err);
+        return { success: false, error: err.message };
       }
     },
-    [loadUserData]
+    [questions.length]
   );
 
   const value = useMemo(

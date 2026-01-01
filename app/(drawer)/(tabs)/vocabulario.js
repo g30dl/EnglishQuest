@@ -12,7 +12,7 @@ export default function VocabularioScreen() {
   const router = useRouter();
   const { areas, unlockedLevels, lessons } = useProgress();
 
-  const areaId = 'vocab';
+  const areaId = 'vocabulario';
   const area = areas.find((a) => a.id === areaId);
   const availableLevels = unlockedLevels.filter((lvl) => lvl.areaId === areaId);
   const availableLessons = lessons.filter((ls) => availableLevels.some((lvl) => lvl.id === ls.levelId));

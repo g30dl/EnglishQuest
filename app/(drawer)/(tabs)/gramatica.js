@@ -12,7 +12,7 @@ export default function GramaticaScreen() {
   const router = useRouter();
   const { areas, unlockedLevels, lessons } = useProgress();
 
-  const areaId = 'grammar';
+  const areaId = 'gramatica';
   const area = areas.find((a) => a.id === areaId);
   const availableLevels = unlockedLevels.filter((lvl) => lvl.areaId === areaId);
   const availableLessons = lessons.filter((ls) => availableLevels.some((lvl) => lvl.id === ls.levelId));

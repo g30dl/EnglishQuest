@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { supabase } from '../../lib/supabaseClient';
+import { useProgress } from '../../context/ProgressContext';
 
 const colors = {
   primary: '#1B5E20',
@@ -11,8 +11,8 @@ const colors = {
 const allowedTypes = ['reading', 'writing', 'listening'];
 
 export default function AdminQuestionsScreen() {
+  const { questions: ctxQuestions, lessons, addQuestion, reload, loading: ctxLoading } = useProgress();
   const [questions, setQuestions] = useState([]);
-  const [lessons, setLessons] = useState([]);
   const [lessonId, setLessonId] = useState('');
   const [type, setType] = useState('reading');
   const [prompt, setPrompt] = useState('');
@@ -25,28 +25,11 @@ export default function AdminQuestionsScreen() {
   const [editing, setEditing] = useState(null);
 
   useEffect(() => {
-    fetchLessons();
-    fetchQuestions();
-  }, []);
-
-  const fetchLessons = async () => {
-    const { data } = await supabase.from('lessons').select('id, title').order('title', { ascending: true });
-    setLessons(data || []);
-    if (!lessonId && data?.[0]?.id) {
-      setLessonId(data[0].id);
+    setQuestions(ctxQuestions);
+    if (!lessonId && lessons?.[0]?.id) {
+      setLessonId(lessons[0].id);
     }
-  };
-
-  const fetchQuestions = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.from('questions').select('*').order('order_index', { ascending: true });
-    if (error) {
-      setMessage('No se pudieron cargar preguntas');
-    } else {
-      setQuestions(data || []);
-    }
-    setLoading(false);
-  };
+  }, [ctxQuestions, lessons, lessonId]);
 
   const resetForm = () => {
     setPrompt('');
@@ -63,6 +46,10 @@ export default function AdminQuestionsScreen() {
       setMessage('Completa leccion, tipo y prompt.');
       return;
     }
+    if (!lessons.find((ls) => ls.id === lessonId)) {
+      setMessage('Selecciona una leccion valida.');
+      return;
+    }
     if (!allowedTypes.includes(type)) {
       setMessage('Tipo invalido. Usa reading / writing / listening.');
       return;
@@ -71,21 +58,22 @@ export default function AdminQuestionsScreen() {
       .split(',')
       .map((opt) => opt.trim())
       .filter(Boolean);
-    const payload = {
-      lesson_id: lessonId,
-      question_type: type,
-      question_text: prompt,
+    const result = await addQuestion({
+      lessonId,
+      type,
+      prompt,
       options: type === 'writing' ? null : options,
-      correct_answer: type === 'writing' ? answerText.trim() : options[Number(answerIndex)] || '',
-      order_index: Number(order) || 0
-    };
-    const { error } = await supabase.from('questions').insert(payload);
-    if (error) {
-      setMessage(error.message || 'No se pudo crear la pregunta');
-    } else {
-      setMessage('Pregunta creada');
+      answerText: type === 'writing' ? answerText.trim() : undefined,
+      answerIndex: type === 'writing' ? null : Number(answerIndex),
+      audioText: type === 'listening' ? prompt : undefined,
+      order: Number(order) || 0
+    });
+    if (result?.success) {
+      setMessage('Pregunta creada exitosamente.');
       resetForm();
-      fetchQuestions();
+      reload?.();
+    } else {
+      setMessage(`Error: ${result?.error || 'No se pudo crear la pregunta'}`);
     }
   };
 
@@ -104,6 +92,10 @@ export default function AdminQuestionsScreen() {
 
   const handleUpdate = async () => {
     if (!editing) return;
+    if (!lessons.find((ls) => ls.id === lessonId)) {
+      setMessage('Selecciona una leccion valida.');
+      return;
+    }
     if (!allowedTypes.includes(type)) {
       setMessage('Tipo invalido. Usa reading / writing / listening.');
       return;
@@ -112,21 +104,21 @@ export default function AdminQuestionsScreen() {
       .split(',')
       .map((opt) => opt.trim())
       .filter(Boolean);
-    const payload = {
+    const { error } = await supabase.from('questions').update({
       lesson_id: lessonId,
       question_type: type,
       question_text: prompt,
       options: type === 'writing' ? null : options,
       correct_answer: type === 'writing' ? answerText.trim() : options[Number(answerIndex)] || '',
-      order_index: Number(order) || 0
-    };
-    const { error } = await supabase.from('questions').update(payload).eq('id', editing.id);
+      order_index: Number(order) || 0,
+      audio_text: type === 'listening' ? prompt : null
+    }).eq('id', editing.id);
     if (error) {
       setMessage(error.message || 'No se pudo editar la pregunta');
     } else {
       setMessage('Pregunta actualizada');
       resetForm();
-      fetchQuestions();
+      reload?.();
     }
   };
 
@@ -171,7 +163,19 @@ export default function AdminQuestionsScreen() {
 
       <View style={styles.form}>
         <Text style={styles.label}>Leccion</Text>
-        <TextInput value={lessonId} onChangeText={setLessonId} style={styles.input} placeholder="UUID leccion" />
+        <View style={styles.chipsRow}>
+          {lessons.map((ls) => (
+            <TouchableOpacity
+              key={ls.id}
+              style={[styles.chip, lessonId === ls.id && styles.chipActive]}
+              onPress={() => setLessonId(ls.id)}
+            >
+              <Text style={[styles.chipText, lessonId === ls.id && styles.chipTextActive]} numberOfLines={1}>
+                {ls.title || ls.id}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         <Text style={styles.label}>Tipo (reading/writing/listening)</Text>
         <View style={styles.chipsRow}>
@@ -231,7 +235,7 @@ export default function AdminQuestionsScreen() {
       </View>
 
       <Text style={styles.sub}>Preguntas existentes</Text>
-      {loading ? (
+      {loading || ctxLoading ? (
         <ActivityIndicator color={colors.primary} size="large" />
       ) : (
         <FlatList
