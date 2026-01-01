@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../../context/ProgressContext';
@@ -16,7 +16,7 @@ const XP_PER_LEVEL = 500;
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { xp, levelNumber, xpToNextLevel, completedLessons } = useProgress();
+  const { xp, levelNumber, xpToNextLevel, completedLessons, loading, reload } = useProgress();
   const progressWithinLevel = xp % XP_PER_LEVEL;
   const progressPercentage = Math.min(1, progressWithinLevel / XP_PER_LEVEL);
   const formattedXp = xp.toLocaleString('es-ES');
@@ -43,85 +43,93 @@ export default function HomeScreen() {
           <View style={styles.logoDot} />
           <Text style={styles.brandText}>EnglishQuest</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push('/(drawer)/(tabs)/perfil')}>
+        <TouchableOpacity onPress={() => router.push('/(drawer)/perfil')}>
           <Ionicons name="settings-outline" size={26} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.profileCard}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <Ionicons name="person-outline" size={32} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>Hola, {displayName}</Text>
-            <Text style={styles.role}>{roleLabel}</Text>
-          </View>
-          <View style={styles.xpPill}>
-            <Ionicons name="flash-outline" size={18} color={colors.accent} />
-            <Text style={styles.xpText}>{formattedXp} XP</Text>
-          </View>
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator color={colors.primary} size="large" />
         </View>
+      ) : (
+        <>
+          <View style={styles.profileCard}>
+            <View style={styles.profileHeader}>
+              <View style={styles.avatar}>
+                <Ionicons name="person-outline" size={32} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.greeting}>Hola, {displayName}</Text>
+                <Text style={styles.role}>{roleLabel}</Text>
+              </View>
+              <View style={styles.xpPill}>
+                <Ionicons name="flash-outline" size={18} color={colors.accent} />
+                <Text style={styles.xpText}>{formattedXp} XP</Text>
+              </View>
+            </View>
 
-        <View style={styles.progressBlock}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Progreso del nivel</Text>
-            <Text style={styles.progressLabel}>Level {levelNumber}</Text>
+            <View style={styles.progressBlock}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressTitle}>Progreso del nivel</Text>
+                <Text style={styles.progressLabel}>Level {levelNumber}</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${progressPercentage * 100}%` }]} />
+              </View>
+              <Text style={styles.progressHint}>{xpToNextLevel} XP para level {levelNumber + 1}</Text>
+            </View>
           </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progressPercentage * 100}%` }]} />
-          </View>
-          <Text style={styles.progressHint}>{xpToNextLevel} XP para level {levelNumber + 1}</Text>
-        </View>
-      </View>
 
-      <TouchableOpacity style={styles.cta} onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}>
-        <View style={styles.ctaLeft}>
-          <View style={styles.ctaIcon}>
-            <Ionicons name="rocket-outline" size={22} color="#fff" />
-          </View>
-          <View>
-            <Text style={styles.ctaText}>EMPEZAR A APRENDER</Text>
-            <Text style={styles.ctaSub}>Continua tu racha de 3 dias</Text>
-          </View>
-        </View>
-        <Ionicons name="chevron-forward" size={22} color="#fff" />
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.cta} onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}>
+            <View style={styles.ctaLeft}>
+              <View style={styles.ctaIcon}>
+                <Ionicons name="rocket-outline" size={22} color="#fff" />
+              </View>
+              <View>
+                <Text style={styles.ctaText}>EMPEZAR A APRENDER</Text>
+                <Text style={styles.ctaSub}>Continua tu racha de 3 dias</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color="#fff" />
+          </TouchableOpacity>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Areas de estudio</Text>
-        <TouchableOpacity onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}>
-          <Text style={styles.sectionLink}>Ver todo</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.areaCard}>
-        <View style={styles.areaIconBlue}>
-          <Ionicons name="book-outline" size={22} color="#fff" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.areaTitle}>Vocabulario</Text>
-          <Text style={styles.areaStat}>12,750 palabras nuevas</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color="#1B5E20" />
-      </View>
-
-      <View style={styles.miniRow}>
-        <View style={[styles.miniCard, { backgroundColor: '#F3E8FF' }]}>
-          <View style={[styles.miniIcon, { backgroundColor: '#A855F7' }]}>
-            <Ionicons name="pencil-outline" size={18} color="#fff" />
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Areas de estudio</Text>
+            <TouchableOpacity onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}>
+              <Text style={styles.sectionLink}>Ver todo</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.miniTitle}>Gramatica</Text>
-          <Text style={styles.miniStat}>{completedLessons.length} temas</Text>
-        </View>
-        <View style={[styles.miniCard, { backgroundColor: '#FFF4D6' }]}>
-          <View style={[styles.miniIcon, { backgroundColor: '#F59E0B' }]}>
-            <Ionicons name="headset-outline" size={18} color="#fff" />
+
+          <View style={styles.areaCard}>
+            <View style={styles.areaIconBlue}>
+              <Ionicons name="book-outline" size={22} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.areaTitle}>Vocabulario</Text>
+              <Text style={styles.areaStat}>12,750 palabras nuevas</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#1B5E20" />
           </View>
-          <Text style={styles.miniTitle}>Listening</Text>
-          <Text style={styles.miniStat}>Sesiones activas</Text>
-        </View>
-      </View>
+
+          <View style={styles.miniRow}>
+            <View style={[styles.miniCard, { backgroundColor: '#F3E8FF' }]}>
+              <View style={[styles.miniIcon, { backgroundColor: '#A855F7' }]}>
+                <Ionicons name="pencil-outline" size={18} color="#fff" />
+              </View>
+              <Text style={styles.miniTitle}>Gramatica</Text>
+              <Text style={styles.miniStat}>{completedLessons.length} temas</Text>
+            </View>
+            <View style={[styles.miniCard, { backgroundColor: '#FFF4D6' }]}>
+              <View style={[styles.miniIcon, { backgroundColor: '#F59E0B' }]}>
+                <Ionicons name="headset-outline" size={18} color="#fff" />
+              </View>
+              <Text style={styles.miniTitle}>Listening</Text>
+              <Text style={styles.miniStat}>Sesiones activas</Text>
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 }

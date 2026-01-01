@@ -50,12 +50,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="headset-outline" size={size} color={color} />
         }}
       />
-      <Tabs.Screen
-        name="perfil"
-        options={{
-          href: null
-        }}
-      />
     </Tabs>
   );
 }

@@ -85,6 +85,29 @@ export default function DrawerLayout() {
           drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />
         }}
       />
+      <Drawer.Screen
+        name="perfil"
+        options={{
+          drawerLabel: 'Perfil',
+          title: 'Perfil',
+          drawerIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />
+        }}
+      />
+      <Drawer.Screen
+        name="configuracion"
+        options={{
+          drawerLabel: 'Configuracion',
+          title: 'Configuracion',
+          drawerIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} />
+        }}
+      />
+      <Drawer.Screen
+        name="lesson"
+        options={{
+          drawerLabel: () => null,
+          title: 'Leccion'
+        }}
+      />
     </Drawer>
   );
 }

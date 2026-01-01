@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useProgress } from '../../../../context/ProgressContext';
+import * as Speech from 'expo-speech';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const colors = {
   primary: '#1B5E20',
@@ -12,7 +14,7 @@ const colors = {
 export default function LessonRunnerScreen() {
   const { areaId, lessonId } = useLocalSearchParams();
   const router = useRouter();
-  const { lessons, questions, lessonById, answerQuestion, completeLesson } = useProgress();
+  const { lessons, questions, lessonById, answerQuestion, completeLesson, loading } = useProgress();
 
   const lesson = lessonById(lessonId);
   const lessonQuestions = useMemo(
@@ -26,6 +28,8 @@ export default function LessonRunnerScreen() {
   const [correctCount, setCorrectCount] = useState(0);
   const [finished, setFinished] = useState(false);
   const completedRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
   const total = lessonQuestions.length;
   const currentQuestion = lessonQuestions[index];
@@ -37,21 +41,31 @@ export default function LessonRunnerScreen() {
     setWrittenAnswer('');
   };
 
-  const handleAnswer = () => {
+  const handleAnswer = async () => {
     if (!currentQuestion) return;
+    if (submitting) return;
+    setSubmitting(true);
 
     let isCorrect = false;
     if (currentQuestion.type === 'writing') {
       isCorrect = writtenAnswer.trim().toLowerCase() === (currentQuestion.answerText || '').trim().toLowerCase();
     } else {
-      if (selectedOption === null) return;
+      if (selectedOption === null) {
+        setSubmitting(false);
+        return;
+      }
       isCorrect = selectedOption === currentQuestion.answerIndex;
     }
 
     if (isCorrect) {
       setCorrectCount((prev) => prev + 1);
-      answerQuestion();
     }
+
+    await answerQuestion({
+      questionId: currentQuestion.id,
+      userAnswer: currentQuestion.type === 'writing' ? writtenAnswer : currentQuestion.options?.[selectedOption],
+      isCorrect
+    });
 
     const nextIndex = index + 1;
     if (nextIndex < total) {
@@ -60,14 +74,42 @@ export default function LessonRunnerScreen() {
     } else {
       setFinished(true);
       if (!completedRef.current) {
-        completeLesson(lessonId);
+        const scorePercent = total === 0 ? 0 : Math.round((correctCount + (isCorrect ? 1 : 0)) / total * 100);
+        if (scorePercent >= 60) {
+          await completeLesson(lessonId, scorePercent);
+        }
         completedRef.current = true;
       }
     }
+    setSubmitting(false);
+  };
+
+  const handleSpeak = () => {
+    if (!currentQuestion) return;
+    const text = currentQuestion.audioText || currentQuestion.prompt || '';
+    if (!text) return;
+    setSpeaking(true);
+    Speech.stop();
+    Speech.speak(text, {
+      language: 'en-US',
+      rate: 0.95,
+      pitch: 1.0,
+      onDone: () => setSpeaking(false),
+      onStopped: () => setSpeaking(false),
+      onError: () => setSpeaking(false)
+    });
   };
 
   const scorePercent = total === 0 ? 0 : Math.round((correctCount / total) * 100);
   const passed = scorePercent >= 60;
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   if (!lesson) {
     return (
@@ -119,6 +161,21 @@ export default function LessonRunnerScreen() {
       <View style={styles.card}>
         <Text style={styles.prompt}>{currentQuestion.prompt}</Text>
 
+        {currentQuestion.type === 'listening' && (
+          <TouchableOpacity style={styles.speakButton} onPress={handleSpeak}>
+            <View style={styles.speakContent}>
+              <Ionicons
+                name={speaking ? 'volume-high' : 'play-circle-outline'}
+                size={22}
+                color={speaking ? colors.accent : colors.primary}
+              />
+              <Text style={[styles.speakText, speaking && { color: colors.accent }]}>
+                {speaking ? 'Reproduciendo...' : 'Reproducir audio'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {currentQuestion.type === 'writing' ? (
           <TextInput
             style={styles.input}
@@ -139,8 +196,10 @@ export default function LessonRunnerScreen() {
         )}
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleAnswer}>
-        <Text style={styles.buttonText}>{index + 1 === total ? 'Finalizar' : 'Siguiente'}</Text>
+      <TouchableOpacity style={styles.button} onPress={handleAnswer} disabled={submitting}>
+        <Text style={styles.buttonText}>
+          {submitting ? 'Guardando...' : index + 1 === total ? 'Finalizar' : 'Siguiente'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -204,6 +263,22 @@ const styles = StyleSheet.create({
   },
   optionText: {
     color: '#2e2e2e'
+  },
+  speakButton: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d8e5d8',
+    backgroundColor: '#f3fff5'
+  },
+  speakContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  speakText: {
+    color: colors.primary,
+    fontWeight: '700'
   },
   input: {
     borderWidth: 1,

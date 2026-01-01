@@ -1,7 +1,9 @@
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../context/ProgressContext';
 import { supabase } from '../../lib/supabaseClient';
+import { userService } from '../../lib/userService';
 
 const colors = {
   primary: '#1B5E20',
@@ -11,38 +13,83 @@ const colors = {
 
 export default function PerfilDrawerScreen() {
   const router = useRouter();
-  const { xp, levelNumber, completedLessons, unlockedLevels, areas } = useProgress();
+  const { lessons, completedLessons, loading } = useProgress();
+  const [profile, setProfile] = useState({ total_xp: 0, current_level: 1, streak_days: 0 });
+  const [fetching, setFetching] = useState(false);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    setFetching(true);
+    const { user } = await userService.getCurrentUser();
+    if (user) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('total_xp, current_level, streak_days, last_activity_date')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!error && data) {
+        setProfile({
+          total_xp: data.total_xp || 0,
+          current_level: data.current_level || 1,
+          streak_days: data.streak_days || 0
+        });
+      }
+    }
+    setFetching(false);
+  };
+
+  const areaProgress = useMemo(() => {
+    const totals = lessons.reduce((acc, ls) => {
+      const key = ls.area || ls.areaId || 'area';
+      acc[key] = acc[key] || { total: 0, completed: 0 };
+      acc[key].total += 1;
+      if (completedLessons.includes(ls.id)) acc[key].completed += 1;
+      return acc;
+    }, {});
+    return Object.entries(totals).map(([areaKey, val]) => ({
+      areaKey,
+      percent: val.total ? Math.round((val.completed / val.total) * 100) : 0,
+      total: val.total,
+      completed: val.completed
+    }));
+  }, [lessons, completedLessons]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.replace('/(auth)/login');
   };
 
+  const isLoading = loading || fetching;
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Perfil del estudiante</Text>
-      <Text style={styles.sub}>Configura tus metas y revisa tu avance</Text>
+      <Text style={styles.sub}>Datos en vivo desde Supabase.</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Nivel</Text>
-        <Text style={styles.cardValue}>{levelNumber}</Text>
-        <Text style={styles.cardHint}>{xp} XP acumulados</Text>
-      </View>
+      {isLoading ? (
+        <ActivityIndicator color={colors.primary} size="large" />
+      ) : (
+        <>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Nivel actual</Text>
+            <Text style={styles.cardValue}>{profile.current_level}</Text>
+            <Text style={styles.cardHint}>{profile.total_xp} XP acumulados</Text>
+            <Text style={styles.cardHint}>Racha: {profile.streak_days} dias</Text>
+          </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Progreso</Text>
-        <Text style={styles.cardValue}>{completedLessons.length} lecciones</Text>
-        <Text style={styles.cardHint}>Niveles desbloqueados: {unlockedLevels.length}</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Areas disponibles</Text>
-        {areas.map((area) => (
-          <Text key={area.id} style={styles.areaItem}>
-            {area.name} - {area.description}
-          </Text>
-        ))}
-      </View>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Progreso por area</Text>
+            {areaProgress.map((item) => (
+              <Text key={item.areaKey} style={styles.areaItem}>
+                {item.areaKey}: {item.completed}/{item.total} ({item.percent}%)
+              </Text>
+            ))}
+          </View>
+        </>
+      )}
 
       <TouchableOpacity style={styles.logout} onPress={handleLogout}>
         <Text style={styles.logoutText}>Cerrar sesion</Text>

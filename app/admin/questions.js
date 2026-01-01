@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView } from 'react-native';
-import { useProgress } from '../../context/ProgressContext';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { supabase } from '../../lib/supabaseClient';
 
 const colors = {
   primary: '#1B5E20',
@@ -8,69 +8,190 @@ const colors = {
   background: '#E8F5E9'
 };
 
+const allowedTypes = ['reading', 'writing', 'listening'];
+
 export default function AdminQuestionsScreen() {
-  const { questions, lessons, addQuestion } = useProgress();
-  const [prompt, setPrompt] = useState('');
-  const [lessonId, setLessonId] = useState(lessons[0]?.id || '');
+  const [questions, setQuestions] = useState([]);
+  const [lessons, setLessons] = useState([]);
+  const [lessonId, setLessonId] = useState('');
   const [type, setType] = useState('reading');
+  const [prompt, setPrompt] = useState('');
   const [optionsInput, setOptionsInput] = useState('');
   const [answerIndex, setAnswerIndex] = useState('');
   const [answerText, setAnswerText] = useState('');
+  const [order, setOrder] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(null);
 
-  const handleCreate = () => {
-    if (!prompt || !lessonId || !type) {
-      setMessage('Completa prompt, tipo y leccion.');
-      return;
+  useEffect(() => {
+    fetchLessons();
+    fetchQuestions();
+  }, []);
+
+  const fetchLessons = async () => {
+    const { data } = await supabase.from('lessons').select('id, title').order('title', { ascending: true });
+    setLessons(data || []);
+    if (!lessonId && data?.[0]?.id) {
+      setLessonId(data[0].id);
     }
+  };
 
-    const basePayload = { lessonId, type, prompt };
-
-    if (type === 'writing') {
-      if (!answerText.trim()) {
-        setMessage('Ingresa la respuesta escrita.');
-        return;
-      }
-      addQuestion({ ...basePayload, answerText: answerText.trim() });
-      setMessage('Pregunta creada (escritura).');
+  const fetchQuestions = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('questions').select('*').order('order_index', { ascending: true });
+    if (error) {
+      setMessage('No se pudieron cargar preguntas');
     } else {
-      const options = optionsInput
-        .split(',')
-        .map((opt) => opt.trim())
-        .filter(Boolean);
-      const answerIdx = Number(answerIndex);
-      if (!options.length || Number.isNaN(answerIdx)) {
-        setMessage('Define opciones y un indice de respuesta.');
-        return;
-      }
-      addQuestion({ ...basePayload, options, answerIndex: answerIdx });
-      setMessage('Pregunta creada.');
+      setQuestions(data || []);
     }
+    setLoading(false);
+  };
 
+  const resetForm = () => {
     setPrompt('');
     setOptionsInput('');
     setAnswerIndex('');
     setAnswerText('');
+    setType('reading');
+    setOrder('');
+    setEditing(null);
   };
+
+  const handleCreate = async () => {
+    if (!lessonId || !prompt || !type) {
+      setMessage('Completa leccion, tipo y prompt.');
+      return;
+    }
+    if (!allowedTypes.includes(type)) {
+      setMessage('Tipo invalido. Usa reading / writing / listening.');
+      return;
+    }
+    const options = optionsInput
+      .split(',')
+      .map((opt) => opt.trim())
+      .filter(Boolean);
+    const payload = {
+      lesson_id: lessonId,
+      question_type: type,
+      question_text: prompt,
+      options: type === 'writing' ? null : options,
+      correct_answer: type === 'writing' ? answerText.trim() : options[Number(answerIndex)] || '',
+      order_index: Number(order) || 0
+    };
+    const { error } = await supabase.from('questions').insert(payload);
+    if (error) {
+      setMessage(error.message || 'No se pudo crear la pregunta');
+    } else {
+      setMessage('Pregunta creada');
+      resetForm();
+      fetchQuestions();
+    }
+  };
+
+  const startEdit = (item) => {
+    setEditing(item);
+    setLessonId(item.lesson_id);
+    setType(item.question_type || 'reading');
+    setPrompt(item.question_text || '');
+    setOptionsInput(Array.isArray(item.options) ? item.options.join(', ') : '');
+    setAnswerText(item.correct_answer || '');
+    setAnswerIndex(
+      Array.isArray(item.options) ? String((item.options || []).findIndex((opt) => opt === item.correct_answer)) : ''
+    );
+    setOrder(String(item.order_index || ''));
+  };
+
+  const handleUpdate = async () => {
+    if (!editing) return;
+    if (!allowedTypes.includes(type)) {
+      setMessage('Tipo invalido. Usa reading / writing / listening.');
+      return;
+    }
+    const options = optionsInput
+      .split(',')
+      .map((opt) => opt.trim())
+      .filter(Boolean);
+    const payload = {
+      lesson_id: lessonId,
+      question_type: type,
+      question_text: prompt,
+      options: type === 'writing' ? null : options,
+      correct_answer: type === 'writing' ? answerText.trim() : options[Number(answerIndex)] || '',
+      order_index: Number(order) || 0
+    };
+    const { error } = await supabase.from('questions').update(payload).eq('id', editing.id);
+    if (error) {
+      setMessage(error.message || 'No se pudo editar la pregunta');
+    } else {
+      setMessage('Pregunta actualizada');
+      resetForm();
+      fetchQuestions();
+    }
+  };
+
+  const handleDelete = (item) => {
+    Alert.alert('Eliminar pregunta', 'Esta accion es irreversible. ¿Continuar?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.from('questions').delete().eq('id', item.id);
+          if (error) {
+            setMessage('No se pudo eliminar la pregunta');
+          } else {
+            setMessage('Pregunta eliminada');
+            fetchQuestions();
+          }
+        }
+      }
+    ]);
+  };
+
+  const handleReorder = async (item, delta) => {
+    const newOrder = (item.order_index || 0) + delta;
+    const { error } = await supabase.from('questions').update({ order_index: newOrder }).eq('id', item.id);
+    if (error) {
+      setMessage('No se pudo reordenar');
+    } else {
+      fetchQuestions();
+    }
+  };
+
+  const filtered = useMemo(() => {
+    if (!lessonId) return questions;
+    return questions.filter((q) => q.lesson_id === lessonId);
+  }, [questions, lessonId]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.heading}>Gestionar preguntas</Text>
-      <Text style={styles.sub}>Asocia preguntas a una leccion.</Text>
+      <Text style={styles.sub}>Asocia preguntas a una leccion y guarda en Supabase.</Text>
 
       <View style={styles.form}>
-        <Text style={styles.label}>Leccion ID</Text>
-        <TextInput value={lessonId} onChangeText={setLessonId} style={styles.input} placeholder="ls1" />
+        <Text style={styles.label}>Leccion</Text>
+        <TextInput value={lessonId} onChangeText={setLessonId} style={styles.input} placeholder="UUID leccion" />
 
         <Text style={styles.label}>Tipo (reading/writing/listening)</Text>
-        <TextInput value={type} onChangeText={setType} style={styles.input} placeholder="reading" />
+        <View style={styles.chipsRow}>
+          {allowedTypes.map((opt) => (
+            <TouchableOpacity
+              key={opt}
+              style={[styles.chip, type === opt && styles.chipActive]}
+              onPress={() => setType(opt)}
+            >
+              <Text style={[styles.chipText, type === opt && styles.chipTextActive]}>{opt}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         <Text style={styles.label}>Prompt</Text>
         <TextInput value={prompt} onChangeText={setPrompt} style={styles.input} placeholder="Selecciona la opcion correcta" />
 
         {type === 'writing' ? (
           <>
-            <Text style={styles.label}>Respuesta correcta (texto)</Text>
+            <Text style={styles.label}>Respuesta (texto)</Text>
             <TextInput value={answerText} onChangeText={setAnswerText} style={styles.input} placeholder="respuesta" />
           </>
         ) : (
@@ -93,26 +214,56 @@ export default function AdminQuestionsScreen() {
           </>
         )}
 
+        <Text style={styles.label}>Orden</Text>
+        <TextInput value={order} onChangeText={setOrder} style={styles.input} placeholder="0" keyboardType="numeric" />
+
         {message ? <Text style={styles.message}>{message}</Text> : null}
 
-        <TouchableOpacity style={styles.button} onPress={handleCreate}>
-          <Text style={styles.buttonText}>Crear pregunta</Text>
-        </TouchableOpacity>
+        {editing ? (
+          <TouchableOpacity style={styles.button} onPress={handleUpdate}>
+            <Text style={styles.buttonText}>Actualizar pregunta</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.button} onPress={handleCreate}>
+            <Text style={styles.buttonText}>Crear pregunta</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <Text style={styles.sub}>Preguntas existentes</Text>
-      <FlatList
-        data={questions}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{item.prompt}</Text>
-            <Text style={styles.cardMeta}>Leccion: {item.lessonId} · Tipo: {item.type}</Text>
-          </View>
-        )}
-        contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
-        scrollEnabled={false}
-      />
+      {loading ? (
+        <ActivityIndicator color={colors.primary} size="large" />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>{item.question_text}</Text>
+              <Text style={styles.cardMeta}>Leccion: {item.lesson_id} • Tipo: {item.question_type}</Text>
+              <Text style={styles.cardMeta}>Orden: {item.order_index || 0}</Text>
+              <View style={styles.row}>
+                <TouchableOpacity style={styles.secondary} onPress={() => handleReorder(item, -1)}>
+                  <Text style={styles.secondaryText}>- Orden</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.secondary} onPress={() => handleReorder(item, 1)}>
+                  <Text style={styles.secondaryText}>+ Orden</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.row}>
+                <TouchableOpacity style={styles.secondary} onPress={() => startEdit(item)}>
+                  <Text style={styles.secondaryText}>Editar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.delete} onPress={() => handleDelete(item)}>
+                  <Text style={styles.deleteText}>Eliminar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
+          scrollEnabled={false}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -181,7 +332,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
-    elevation: 1
+    elevation: 1,
+    gap: 6
   },
   cardTitle: {
     fontSize: 16,
@@ -191,5 +343,52 @@ const styles = StyleSheet.create({
   cardMeta: {
     fontSize: 13,
     color: '#555'
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 8
+  },
+  secondary: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#E8F5E9',
+    alignItems: 'center'
+  },
+  secondaryText: {
+    color: colors.primary,
+    fontWeight: '700'
+  },
+  delete: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#FFE4E6',
+    alignItems: 'center'
+  },
+  deleteText: {
+    color: '#d32f2f',
+    fontWeight: '700'
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8
+  },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f1'
+  },
+  chipActive: {
+    backgroundColor: colors.accent
+  },
+  chipText: {
+    color: '#555',
+    fontWeight: '600'
+  },
+  chipTextActive: {
+    color: '#fff'
   }
 });
