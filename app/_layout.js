@@ -15,20 +15,24 @@ export default function RootLayout() {
 
   useEffect(() => {
     let mounted = true;
-    userService.getSession().then((currentSession) => {
+
+    const hydrateUser = async () => {
+      const { user, role: derivedRole } = await userService.getCurrentUser();
       if (!mounted) return;
-      setSession(currentSession);
-      if (currentSession?.user) {
-        setRole(userService.deriveRole(currentSession.user));
-      }
+      const { data } = await supabase.auth.getSession();
+      setSession(data?.session ?? null);
+      setRole(derivedRole);
       setLoading(false);
-    });
+    };
+
+    hydrateUser();
 
     const { data: subscription } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (!mounted) return;
       setSession(newSession);
       if (newSession?.user) {
-        setRole(userService.deriveRole(newSession.user));
+        const { role: derivedRole } = await userService.getCurrentUser();
+        setRole(derivedRole);
       } else {
         setRole('student');
       }

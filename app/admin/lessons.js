@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView } from 'react-native';
 import { useProgress } from '../../context/ProgressContext';
 
 const colors = {
@@ -27,7 +27,7 @@ export default function AdminLessonsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.heading}>Gestionar lecciones</Text>
       <Text style={styles.sub}>Asigna lecciones a un nivel y define su tipo.</Text>
 
@@ -59,8 +59,9 @@ export default function AdminLessonsScreen() {
           </View>
         )}
         contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
+        scrollEnabled={false}
       />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -68,7 +69,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 16,
+    padding: 16
+  },
+  scrollContent: {
+    paddingBottom: 24,
     gap: 12
   },
   heading: {

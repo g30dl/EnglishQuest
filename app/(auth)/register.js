@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabaseClient';
+import { userService } from '../../lib/userService';
 
 const colors = {
   primary: '#1B5E20',
@@ -22,6 +23,13 @@ export default function RegisterScreen() {
     const { error: signUpError } = await supabase.auth.signUp({ email, password });
     if (signUpError) {
       setError(signUpError.message);
+      setLoading(false);
+      return;
+    }
+
+    const { role } = await userService.getCurrentUser();
+    if (role === 'admin') {
+      router.replace('/admin');
     } else {
       router.replace('/(drawer)');
     }

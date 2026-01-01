@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView } from 'react-native';
 import { useProgress } from '../../context/ProgressContext';
 
 const colors = {
@@ -28,7 +28,7 @@ export default function AdminLevelsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.heading}>Gestionar niveles</Text>
       <Text style={styles.sub}>Crea nuevos niveles asignados a un area.</Text>
 
@@ -66,8 +66,9 @@ export default function AdminLevelsScreen() {
           </View>
         )}
         contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
+        scrollEnabled={false}
       />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -75,7 +76,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 16,
+    padding: 16
+  },
+  scrollContent: {
+    paddingBottom: 24,
     gap: 12
   },
   heading: {

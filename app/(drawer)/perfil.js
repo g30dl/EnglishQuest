@@ -1,7 +1,7 @@
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useProgress } from '../../../context/ProgressContext';
-import { supabase } from '../../../lib/supabaseClient';
+import { useProgress } from '../../context/ProgressContext';
+import { supabase } from '../../lib/supabaseClient';
 
 const colors = {
   primary: '#1B5E20',
@@ -9,7 +9,7 @@ const colors = {
   background: '#E8F5E9'
 };
 
-export default function PerfilScreen() {
+export default function PerfilDrawerScreen() {
   const router = useRouter();
   const { xp, levelNumber, completedLessons, unlockedLevels, areas } = useProgress();
 

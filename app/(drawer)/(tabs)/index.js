@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../../context/ProgressContext';
+import { userService } from '../../../lib/userService';
 
 const colors = {
   primary: '#1B5E20',
@@ -18,6 +20,21 @@ export default function HomeScreen() {
   const progressWithinLevel = xp % XP_PER_LEVEL;
   const progressPercentage = Math.min(1, progressWithinLevel / XP_PER_LEVEL);
   const formattedXp = xp.toLocaleString('es-ES');
+  const [displayName, setDisplayName] = useState('Estudiante');
+  const [roleLabel, setRoleLabel] = useState('Explorador');
+
+  useEffect(() => {
+    let mounted = true;
+    userService.getCurrentUser().then(({ user, profile, role }) => {
+      if (!mounted) return;
+      const name = profile?.full_name || user?.email || 'Estudiante';
+      setDisplayName(name);
+      setRoleLabel(role === 'admin' ? 'Administrador' : 'Explorador');
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -37,8 +54,8 @@ export default function HomeScreen() {
             <Ionicons name="person-outline" size={32} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>Hola, Alex</Text>
-            <Text style={styles.role}>Explorador Novato</Text>
+            <Text style={styles.greeting}>Hola, {displayName}</Text>
+            <Text style={styles.role}>{roleLabel}</Text>
           </View>
           <View style={styles.xpPill}>
             <Ionicons name="flash-outline" size={18} color={colors.accent} />
@@ -58,7 +75,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.cta} onPress={() => router.push('/(drawer)/(tabs)/areas')}>
+      <TouchableOpacity style={styles.cta} onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}>
         <View style={styles.ctaLeft}>
           <View style={styles.ctaIcon}>
             <Ionicons name="rocket-outline" size={22} color="#fff" />
@@ -73,7 +90,7 @@ export default function HomeScreen() {
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Areas de estudio</Text>
-        <TouchableOpacity onPress={() => router.push('/(drawer)/(tabs)/areas')}>
+        <TouchableOpacity onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}>
           <Text style={styles.sectionLink}>Ver todo</Text>
         </TouchableOpacity>
       </View>

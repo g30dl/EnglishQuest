@@ -1,5 +1,4 @@
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { StyleSheet, View, Text } from 'react-native';
 import { useProgress } from '../../context/ProgressContext';
 
 const colors = {
@@ -9,29 +8,34 @@ const colors = {
 };
 
 export default function AdminHome() {
-  const router = useRouter();
-  const { levels, lessons, questions } = useProgress();
+  const { levels, lessons, questions, completedLessons, xp, users } = useProgress();
 
-  const navItems = [
-    { title: 'Niveles', hint: `${levels.length} creados`, path: '/admin/levels' },
-    { title: 'Lecciones', hint: `${lessons.length} creadas`, path: '/admin/lessons' },
-    { title: 'Preguntas', hint: `${questions.length} registradas`, path: '/admin/questions' }
+  const stats = [
+    { label: 'Niveles', value: levels.length },
+    { label: 'Lecciones', value: lessons.length },
+    { label: 'Preguntas', value: questions.length },
+    { label: 'Lecciones completadas', value: completedLessons.length }
   ];
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Panel administrador</Text>
-      <Text style={styles.text}>Gestiona niveles, lecciones y preguntas de EnglishQuest.</Text>
+      <Text style={styles.title}>Dashboard Admin</Text>
+      <Text style={styles.text}>Resumen rapido del contenido y progreso.</Text>
 
-      {navItems.map((item) => (
-        <TouchableOpacity key={item.title} style={styles.card} onPress={() => router.push(item.path)}>
-          <View>
-            <Text style={styles.cardLabel}>{item.title}</Text>
-            <Text style={styles.cardValue}>{item.hint}</Text>
+      <View style={styles.cards}>
+        {stats.map((item) => (
+          <View key={item.label} style={styles.card}>
+            <Text style={styles.cardLabel}>{item.label}</Text>
+            <Text style={styles.cardValue}>{item.value}</Text>
           </View>
-          <Text style={styles.link}>Abrir</Text>
-        </TouchableOpacity>
-      ))}
+        ))}
+      </View>
+
+      <View style={styles.panel}>
+        <Text style={styles.panelTitle}>Accesos rapidos</Text>
+        <Text style={styles.panelText}>Usa las pestañas inferiores para gestionar Niveles, Lecciones y Preguntas.</Text>
+        <Text style={styles.panelText}>El rol admin puede ver y editar todo el contenido.</Text>
+      </View>
     </View>
   );
 }
@@ -53,7 +57,32 @@ const styles = StyleSheet.create({
     color: '#2e2e2e',
     marginBottom: 4
   },
+  cards: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10
+  },
   card: {
+    flexBasis: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1
+  },
+  cardLabel: {
+    fontSize: 13,
+    color: '#555'
+  },
+  cardValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.primary
+  },
+  panel: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 14,
@@ -62,21 +91,15 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
+    gap: 6
   },
-  cardLabel: {
+  panelTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: colors.primary
   },
-  cardValue: {
+  panelText: {
     fontSize: 13,
-    color: '#4B5563'
-  },
-  link: {
-    color: colors.accent,
-    fontWeight: '700'
+    color: '#555'
   }
 });
