@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
@@ -16,7 +16,7 @@ const XP_PER_LEVEL = 500;
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { xp, levelNumber, xpToNextLevel, completedLessons, loading, reload } = useProgress();
+  const { xp, levelNumber, xpToNextLevel, lessons, completedLessons, loading } = useProgress();
   const progressWithinLevel = xp % XP_PER_LEVEL;
   const progressPercentage = Math.min(1, progressWithinLevel / XP_PER_LEVEL);
   const formattedXp = xp.toLocaleString('es-ES');
@@ -37,6 +37,25 @@ export default function HomeScreen() {
       mounted = false;
     };
   }, []);
+
+  const areaStats = useMemo(() => {
+    const base = {
+      vocabulario: { total: 0, completed: 0 },
+      gramatica: { total: 0, completed: 0 },
+      listening: { total: 0, completed: 0 }
+    };
+    lessons.forEach((ls) => {
+      const key = ls.areaId || ls.area;
+      if (!base[key]) return;
+      base[key].total += 1;
+      if (completedLessons.includes(ls.id)) base[key].completed += 1;
+    });
+    Object.keys(base).forEach((key) => {
+      const entry = base[key];
+      entry.percent = entry.total ? Math.round((entry.completed / entry.total) * 100) : 0;
+    });
+    return base;
+  }, [lessons, completedLessons]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -100,32 +119,44 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.areaCard}>
+          <TouchableOpacity style={styles.areaCard} onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}>
             <View style={styles.areaIconBlue}>
               <Ionicons name="book-outline" size={22} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.areaTitle}>Vocabulario</Text>
-              <Text style={styles.areaStat}>12,750 palabras nuevas</Text>
+              <Text style={styles.areaStat}>
+                {areaStats.vocabulario.completed} lecciones completadas ({areaStats.vocabulario.percent}%)
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#1B5E20" />
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.miniRow}>
-            <View style={[styles.miniCard, { backgroundColor: '#F3E8FF' }]}>
+            <TouchableOpacity
+              style={[styles.miniCard, { backgroundColor: '#F3E8FF' }]}
+              onPress={() => router.push('/(drawer)/(tabs)/gramatica')}
+            >
               <View style={[styles.miniIcon, { backgroundColor: '#A855F7' }]}>
                 <Ionicons name="pencil-outline" size={18} color="#fff" />
               </View>
               <Text style={styles.miniTitle}>Gramatica</Text>
-              <Text style={styles.miniStat}>{completedLessons.length} temas</Text>
-            </View>
-            <View style={[styles.miniCard, { backgroundColor: '#FFF4D6' }]}>
+              <Text style={styles.miniStat}>
+                {areaStats.gramatica.total} lecciones ({areaStats.gramatica.percent}% completadas)
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.miniCard, { backgroundColor: '#FFF4D6' }]}
+              onPress={() => router.push('/(drawer)/(tabs)/listening')}
+            >
               <View style={[styles.miniIcon, { backgroundColor: '#F59E0B' }]}>
                 <Ionicons name="headset-outline" size={18} color="#fff" />
               </View>
               <Text style={styles.miniTitle}>Listening</Text>
-              <Text style={styles.miniStat}>Sesiones activas</Text>
-            </View>
+              <Text style={styles.miniStat}>
+                {areaStats.listening.completed} lecciones completadas ({areaStats.listening.percent}%)
+              </Text>
+            </TouchableOpacity>
           </View>
         </>
       )}
