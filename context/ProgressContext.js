@@ -1,67 +1,11 @@
-import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { userService } from '../lib/userService';
+import { crudService } from '../lib/crudService';
 
 const XP_PER_CORRECT = 10;
 const XP_PER_LESSON = 50;
 const XP_PER_LEVEL = 500;
-
-// Fallbacks en memoria para no romper la UI si Supabase falla
-const initialAreas = [
-  { id: 'vocabulario', name: 'Vocabulario', description: 'Amplia tu vocabulario con practicas guiadas.', color: '#1B5E20' },
-  { id: 'gramatica', name: 'Gramatica', description: 'Refuerza estructuras y tiempos verbales.', color: '#00C853' },
-  { id: 'listening', name: 'Listening', description: 'Mejora la comprension auditiva con audios cortos.', color: '#4CAF50' }
-];
-
-const initialLevels = [
-  { id: 'lvl1', areaId: 'vocabulario', name: 'Nivel 1', order: 1 },
-  { id: 'lvl2', areaId: 'gramatica', name: 'Nivel 2', order: 2 },
-  { id: 'lvl3', areaId: 'listening', name: 'Nivel 3', order: 3 }
-];
-
-const initialLessons = [
-  { id: 'ls1', levelId: 'lvl1', title: 'Saludos basicos', type: 'reading', areaId: 'vocabulario', level: 1, xp_reward: XP_PER_LESSON },
-  { id: 'ls2', levelId: 'lvl1', title: 'Colores y numeros', type: 'writing', areaId: 'vocabulario', level: 1, xp_reward: XP_PER_LESSON },
-  { id: 'ls3', levelId: 'lvl2', title: 'Present Simple vs Continuous', type: 'reading', areaId: 'gramatica', level: 2, xp_reward: XP_PER_LESSON },
-  { id: 'ls4', levelId: 'lvl3', title: 'Dialogo en el aeropuerto', type: 'listening', areaId: 'listening', level: 3, xp_reward: XP_PER_LESSON },
-  { id: 'ls5', levelId: 'lvl3', title: 'Anuncio en el avion', type: 'listening', areaId: 'listening', level: 3, xp_reward: XP_PER_LESSON }
-];
-
-const initialQuestions = [
-  {
-    id: 'q1',
-    lessonId: 'ls1',
-    type: 'reading',
-    prompt: 'Selecciona el saludo formal',
-    options: ['Hi', 'Hello', 'Good morning'],
-    answerIndex: 2
-  },
-  {
-    id: 'q2',
-    lessonId: 'ls2',
-    type: 'writing',
-    prompt: 'Escribe el numero "seven" en ingles',
-    answerText: 'seven'
-  },
-  {
-    id: 'q3',
-    lessonId: 'ls4',
-    type: 'listening',
-    prompt: 'Escucha y selecciona la intencion',
-    audioText: 'Welcome to the airport. Please proceed to the check-in desk for your flight.',
-    options: ['Check-in', 'Boarding', 'Asking directions'],
-    answerIndex: 0
-  },
-  {
-    id: 'q4',
-    lessonId: 'ls5',
-    type: 'listening',
-    prompt: 'Listen and choose the correct gate number',
-    audioText: 'Attention passengers. Flight 247 to New York is now boarding at gate five.',
-    options: ['Gate 2', 'Gate 4', 'Gate 5'],
-    answerIndex: 2
-  }
-];
 
 const ProgressContext = createContext(null);
 
@@ -76,16 +20,21 @@ const normalizeArea = (area) => {
 
 export function ProgressProvider({ children }) {
   const [loading, setLoading] = useState(false);
+  const [loadingAreas, setLoadingAreas] = useState(false);
+  const [loadingLevels, setLoadingLevels] = useState(false);
+  const [loadingLessons, setLoadingLessons] = useState(false);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [error, setError] = useState(null);
   const [xp, setXp] = useState(0);
   const [levelNumber, setLevelNumber] = useState(1);
   const [xpToNextLevel, setXpToNextLevel] = useState(XP_PER_LEVEL);
-  const [areas] = useState(initialAreas);
-  const [levels, setLevels] = useState(initialLevels);
-  const [lessons, setLessons] = useState(initialLessons);
-  const [questions, setQuestions] = useState(initialQuestions);
+  const [areas, setAreas] = useState([]);
+  const [levels, setLevels] = useState([]);
+  const [lessons, setLessons] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [completedLessons, setCompletedLessons] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const channelRef = useRef(null);
 
   const computeXpMeta = useCallback((totalXp) => {
     const lv = Math.floor(totalXp / XP_PER_LEVEL) + 1;
@@ -94,19 +43,21 @@ export function ProgressProvider({ children }) {
     return { lv, toNext };
   }, []);
 
-const hydrateLessons = useCallback((rows) => {
-    if (!rows?.length) return initialLessons;
+  const hydrateLessons = useCallback((rows) => {
+    if (!rows?.length) return [];
     return rows
       .filter((row) => row.is_active !== false)
       .map((row) => {
         const areaId = normalizeArea(row.area);
+        const levelNum = row.level || row.order_index || 1;
+        const levelId = `lvl-${areaId}-${levelNum}`;
         return {
           id: row.id,
-          levelId: `lvl-${row.level || 1}-${areaId}`,
+          levelId,
           title: row.title,
           type: row.type || row.question_type || 'reading',
           areaId,
-          level: row.level || 1,
+          level: levelNum,
           xp_reward: row.xp_reward || XP_PER_LESSON,
           order: row.order_index || 0,
           description: row.description || ''
@@ -116,7 +67,7 @@ const hydrateLessons = useCallback((rows) => {
   }, []);
 
   const hydrateQuestions = useCallback((rows) => {
-    if (!rows?.length) return initialQuestions;
+    if (!rows?.length) return [];
     return rows.map((row) => {
       const options = Array.isArray(row.options) ? row.options : [];
       const correctAnswer = row.correct_answer || '';
@@ -137,9 +88,9 @@ const hydrateLessons = useCallback((rows) => {
   }, []);
 
   const hydrateLevels = useCallback((rows, userLevel) => {
-    if (!rows?.length) return initialLevels;
+    if (!rows?.length) return [];
     const parsed = rows.map((row) => ({
-      id: row.id || `lvl-${row.order_index || row.level || 1}-${normalizeArea(row.area)}`,
+      id: row.id || `lvl-${normalizeArea(row.area)}-${row.order_index || row.level || 1}`,
       areaId: normalizeArea(row.area),
       name: row.name || `Nivel ${row.order_index || row.level || 1}`,
       order: row.order_index || row.level || 1
@@ -160,6 +111,11 @@ const hydrateLessons = useCallback((rows) => {
       }
       setCurrentUserId(user.id);
 
+      setLoadingAreas(true);
+      setLoadingLevels(true);
+      setLoadingLessons(true);
+      setLoadingQuestions(true);
+
       const [
         { data: areasData, error: areasError },
         { data: levelsData, error: levelsError },
@@ -172,12 +128,16 @@ const hydrateLessons = useCallback((rows) => {
         supabase.from('questions').select('*')
       ]);
 
-      if (lessonsError) {
-        console.warn('No se pudieron cargar lecciones, usando fallback', lessonsError.message);
-      }
-      if (questionsError) {
-        console.warn('No se pudieron cargar preguntas, usando fallback', questionsError.message);
-      }
+      console.log('Cargando datos...');
+      console.log('Areas:', areasData?.length ?? 0);
+      console.log('Levels:', levelsData?.length ?? 0);
+      console.log('Lessons:', lessonsData?.length ?? 0);
+      console.log('Questions:', questionsData?.length ?? 0);
+
+      if (areasError) console.warn('No se pudieron cargar areas', areasError.message);
+      if (levelsError) console.warn('No se pudieron cargar niveles', levelsError.message);
+      if (lessonsError) console.warn('No se pudieron cargar lecciones', lessonsError.message);
+      if (questionsError) console.warn('No se pudieron cargar preguntas', questionsError.message);
 
       const safeAreas =
         (areasData || []).map((a) => ({
@@ -186,25 +146,30 @@ const hydrateLessons = useCallback((rows) => {
           description: a.description || '',
           color: a.color || '#1B5E20'
         })) || [];
-      if (safeAreas.length) setAreas(safeAreas);
+      setAreas(safeAreas);
+      setLoadingAreas(false);
 
       const hydratedLevels = hydrateLevels(levelsData, profile?.current_level || 1);
-      setLevels(hydratedLevels.length ? hydratedLevels : initialLevels);
+      setLevels(hydratedLevels);
+      setLoadingLevels(false);
 
       const hydratedLessons = hydrateLessons(lessonsData);
       setLessons(hydratedLessons);
+      setLoadingLessons(false);
+
       const hydratedQuestions = hydrateQuestions(questionsData);
       setQuestions(hydratedQuestions);
+      setLoadingQuestions(false);
 
       const { data: progressData, error: progressError } = await supabase
         .from('user_progress')
         .select('*')
         .eq('user_id', user.id);
       if (progressError) {
-        console.warn('No se pudo cargar progreso, usando fallback', progressError.message);
+        console.warn('No se pudo cargar progreso', progressError.message);
       }
       const completed = (progressData || []).filter((row) => row.is_completed).map((row) => row.lesson_id);
-      setCompletedLessons(completed.length ? completed : []);
+      setCompletedLessons(completed || []);
 
       const { data: userRow, error: userError } = await supabase
         .from('users')
@@ -213,7 +178,7 @@ const hydrateLessons = useCallback((rows) => {
         .maybeSingle();
 
       if (userError) {
-        console.warn('No se pudo cargar usuario, usando fallback', userError.message);
+        console.warn('No se pudo cargar usuario', userError.message);
       }
       const totalXp = userRow?.total_xp ?? 0;
       const level = userRow?.current_level ?? profile?.current_level ?? 1;
@@ -222,15 +187,50 @@ const hydrateLessons = useCallback((rows) => {
       setLevelNumber(level || meta.lv);
       setXpToNextLevel(meta.toNext);
     } catch (err) {
-      console.warn('Error inesperado al cargar datos, usando fallback', err.message);
+      console.warn('Error inesperado al cargar datos', err.message);
       setError('No se pudieron cargar datos remotos.');
     } finally {
       setLoading(false);
+      setLoadingAreas(false);
+      setLoadingLevels(false);
+      setLoadingLessons(false);
+      setLoadingQuestions(false);
     }
   }, [computeXpMeta, hydrateLevels, hydrateLessons, hydrateQuestions]);
 
   useEffect(() => {
     loadUserData();
+    // Subscripciones en tiempo real a cambios de BD para refrescar cache
+    const channel = supabase
+      .channel('realtime-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lessons' },
+        () => loadUserData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'questions' },
+        () => loadUserData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'levels' },
+        () => loadUserData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'areas' },
+        () => loadUserData()
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
   }, [loadUserData]);
 
   const addXp = useCallback(
@@ -383,18 +383,13 @@ const hydrateLessons = useCallback((rows) => {
   const addLesson = useCallback(
     async (payload) => {
       try {
-        const insertPayload = {
-          title: payload.title,
-          description: payload.description || '',
-          area: payload.areaId || payload.area || 'vocabulario',
-          level: payload.level || 1,
-          order_index: payload.order || 0,
-          xp_reward: payload.xp_reward || XP_PER_LESSON,
-          type: payload.type || 'reading',
-          is_active: payload.is_active ?? true
-        };
-        const { data, error } = await supabase.from('lessons').insert(insertPayload).select().single();
-        if (error) throw error;
+        const area = payload.areaId || payload.area || 'vocabulario';
+        const result = await crudService.createLesson({
+          ...payload,
+          area
+        });
+        if (!result.success) return result;
+        const data = result.data;
         const areaId = normalizeArea(data.area);
         setLessons((prev) => [
           ...prev,
@@ -413,6 +408,54 @@ const hydrateLessons = useCallback((rows) => {
         return { success: true };
       } catch (err) {
         console.warn('Error inesperado al crear leccion', err.message);
+        return { success: false, error: err.message };
+      }
+    },
+    []
+  );
+
+  const updateLesson = useCallback(
+    async (id, payload) => {
+      try {
+        const area = payload.areaId || payload.area;
+        const result = await crudService.updateLesson(id, { ...payload, area });
+        if (!result.success) return result;
+        const data = result.data;
+        const areaId = normalizeArea(data.area);
+        setLessons((prev) =>
+          prev.map((ls) =>
+            ls.id === id
+              ? {
+                  id: data.id,
+                  levelId: `lvl-${data.level || 1}-${areaId}`,
+                  title: data.title,
+                  type: data.type || 'reading',
+                  areaId,
+                  level: data.level || 1,
+                  xp_reward: data.xp_reward || XP_PER_LESSON,
+                  order: data.order_index || 0,
+                  description: data.description || ''
+                }
+              : ls
+          )
+        );
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    },
+    []
+  );
+
+  const deleteLesson = useCallback(
+    async (id) => {
+      try {
+        const result = await crudService.deleteLesson(id);
+        if (!result.success) return result;
+        setLessons((prev) => prev.filter((ls) => ls.id !== id));
+        setCompletedLessons((prev) => prev.filter((c) => c !== id));
+        return { success: true };
+      } catch (err) {
         return { success: false, error: err.message };
       }
     },
@@ -452,18 +495,23 @@ const hydrateLessons = useCallback((rows) => {
             answerText: data.correct_answer
           }
         ]);
+        await loadUserData();
         return { success: true };
       } catch (err) {
         console.error('Error adding question:', err);
         return { success: false, error: err.message };
       }
     },
-    [questions.length]
+    [questions.length, loadUserData]
   );
 
   const value = useMemo(
     () => ({
       loading,
+      loadingAreas,
+      loadingLevels,
+      loadingLessons,
+      loadingQuestions,
       error,
       xp,
       levelNumber,
@@ -480,11 +528,18 @@ const hydrateLessons = useCallback((rows) => {
       answerQuestion,
       addLevel,
       addLesson,
+      updateLesson,
+      deleteLesson,
       addQuestion,
-      reload: loadUserData
+      reload: loadUserData,
+      refresh: loadUserData
     }),
     [
       loading,
+      loadingAreas,
+      loadingLevels,
+      loadingLessons,
+      loadingQuestions,
       error,
       xp,
       levelNumber,

@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../../context/ProgressContext';
 
@@ -10,7 +10,7 @@ const colors = {
 
 export default function VocabularioScreen() {
   const router = useRouter();
-  const { areas, unlockedLevels, lessons } = useProgress();
+  const { areas, unlockedLevels, lessons, loadingLessons, loadingQuestions } = useProgress();
 
   const areaId = 'vocabulario';
   const area = areas.find((a) => a.id === areaId);
@@ -30,6 +30,12 @@ export default function VocabularioScreen() {
       <Text style={styles.heading}>Vocabulario</Text>
       <Text style={styles.sub}>{area?.description || 'Practica vocabulario clave.'}</Text>
 
+      {(loadingLessons || loadingQuestions) && (
+        <View style={{ paddingVertical: 12 }}>
+          <ActivityIndicator color={colors.primary} size="small" />
+        </View>
+      )}
+
       <FlatList
         data={groupedByLevel}
         keyExtractor={(item) => item.id}
@@ -37,7 +43,9 @@ export default function VocabularioScreen() {
           <View style={styles.levelCard}>
             <Text style={styles.levelTitle}>{item.name}</Text>
             {item.lessons.length === 0 ? (
-              <Text style={styles.empty}>Sin lecciones disponibles en este nivel.</Text>
+              <Text style={styles.empty}>
+                {loadingLessons ? 'Cargando lecciones...' : 'Sin lecciones disponibles en este nivel.'}
+              </Text>
             ) : (
               item.lessons.map((lesson) => (
                 <TouchableOpacity key={lesson.id} style={styles.lessonRow} onPress={() => goToLesson(lesson.id)}>

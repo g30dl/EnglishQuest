@@ -66,20 +66,20 @@ export default function AdminLevelsScreen() {
       return;
     }
     const newLevel = Number(order) || editing.level;
-    const { error } = await supabase
-      .from('lessons')
-      .update({ area: areaId, level: newLevel, order_index: newLevel })
-      .eq('area', editing.area)
-      .eq('level', editing.level);
-    if (error) {
-      setMessage('No se pudo editar el nivel');
+    const result = await addLevel({
+      name: name || `Nivel ${newLevel}`,
+      areaId,
+      order: newLevel
+    });
+    if (!result?.success) {
+      setMessage(`No se pudo editar el nivel: ${result?.error || 'Error desconocido'}`);
     } else {
       setMessage('Nivel actualizado');
       setEditing(null);
       setAreaId(defaultArea);
       setOrder('');
       setName('');
-      fetchLevels();
+      reload?.();
     }
   };
 
@@ -103,7 +103,7 @@ export default function AdminLevelsScreen() {
             setMessage('No se pudo eliminar el nivel');
           } else {
             setMessage('Nivel eliminado');
-            fetchLevels();
+            reload?.();
           }
         }
       }
@@ -159,7 +159,7 @@ export default function AdminLevelsScreen() {
       </View>
 
       <Text style={styles.sub}>Niveles existentes</Text>
-      {loading ? (
+      {loading || ctxLoading ? (
         <ActivityIndicator color={colors.primary} size="large" />
       ) : (
         <FlatList

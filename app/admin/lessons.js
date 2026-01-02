@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, Switch, ActivityIndicator } from 'react-native';
-import { supabase } from '../../lib/supabaseClient';
 import { useProgress } from '../../context/ProgressContext';
 
 const colors = {
@@ -14,7 +13,14 @@ const allowedTypes = ['reading', 'writing', 'listening'];
 const levelOptions = Array.from({ length: 10 }, (_, i) => i + 1);
 
 export default function AdminLessonsScreen() {
-  const { lessons: ctxLessons, addLesson, reload, loading: ctxLoading } = useProgress();
+  const {
+    lessons: ctxLessons,
+    addLesson,
+    updateLesson: ctxUpdateLesson,
+    deleteLesson: ctxDeleteLesson,
+    reload,
+    loading: ctxLoading
+  } = useProgress();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
@@ -112,17 +118,9 @@ export default function AdminLessonsScreen() {
       xp_reward: Number(xpReward) || 50,
       type
     };
-    const { error } = await supabase.from('lessons').update({
-      title: basePayload.title,
-      description: basePayload.description,
-      area: basePayload.area,
-      level: basePayload.level,
-      order_index: basePayload.order,
-      xp_reward: basePayload.xp_reward,
-      type: basePayload.type
-    }).eq('id', editing.id);
-    if (error) {
-      setMessage(`No se pudo actualizar la leccion: ${error.message}`);
+    const result = await ctxUpdateLesson(editing.id, basePayload);
+    if (!result?.success) {
+      setMessage(`No se pudo actualizar la leccion: ${result?.error || 'Error desconocido'}`);
       return;
     }
     setMessage('Leccion actualizada');
@@ -149,9 +147,9 @@ export default function AdminLessonsScreen() {
             setMessage('No se puede eliminar: hay preguntas asociadas.');
             return;
           }
-          const { error } = await supabase.from('lessons').delete().eq('id', item.id);
-          if (error) {
-            setMessage('No se pudo eliminar la leccion');
+          const result = await ctxDeleteLesson(item.id);
+          if (!result?.success) {
+            setMessage(result?.error || 'No se pudo eliminar la leccion');
           } else {
             setMessage('Leccion eliminada');
             reload?.();
@@ -162,12 +160,17 @@ export default function AdminLessonsScreen() {
   };
 
   const handleToggle = async (item) => {
-    const { error } = await supabase
-      .from('lessons')
-      .update({ is_active: !item.is_active })
-      .eq('id', item.id);
-    if (error) {
-      setMessage('No se pudo actualizar el estado');
+    const result = await ctxUpdateLesson(item.id, {
+      ...item,
+      area: item.area,
+      level: item.level,
+      order: item.order_index || 0,
+      xp_reward: item.xp_reward,
+      type: item.type,
+      is_active: !item.is_active
+    });
+    if (!result?.success) {
+      setMessage(result?.error || 'No se pudo actualizar el estado');
     } else {
       reload?.();
     }
