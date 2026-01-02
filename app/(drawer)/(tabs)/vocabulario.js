@@ -30,8 +30,6 @@ export default function VocabularioScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Vocabulario</Text>
-      <Text style={styles.sub}>{area?.description || 'Practica vocabulario clave.'}</Text>
 
       {(loadingLessons || loadingQuestions) && (
         <View style={{ paddingVertical: 12 }}>
@@ -61,6 +59,7 @@ export default function VocabularioScreen() {
                   style={({ pressed }) => [
                     styles.lessonRow,
                     !item.unlocked && styles.lessonRowLocked,
+                    completedLessons.includes(lesson.id) && styles.lessonRowCompleted,
                     pressed && styles.cardPressed
                   ]}
                   onPress={() => goToLesson(lesson.id, item.unlocked)}
@@ -69,19 +68,24 @@ export default function VocabularioScreen() {
                   <View style={[styles.dot, !item.unlocked && styles.dotLocked]} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.lessonTitle, !item.unlocked && styles.lockedText]}>{lesson.title}</Text>
-                    <View style={styles.metaRow}>
-                      <Ionicons
-                        name={
-                          lesson.type === 'writing'
-                            ? 'create-outline'
-                            : lesson.type === 'listening'
-                              ? 'headset-outline'
-                              : 'book-outline'
-                        }
-                        size={18}
-                        color={lesson.type === 'listening' ? '#F59E0B' : lesson.type === 'writing' ? '#7C3AED' : '#2563EB'}
-                      />
-                      <Text style={[styles.lessonMeta, !item.unlocked && styles.lockedText]}>{lesson.type}</Text>
+                    <View style={styles.metaRowWrap}>
+                      <View style={styles.metaRow}>
+                        <Ionicons
+                          name={
+                            lesson.type === 'writing'
+                              ? 'create-outline'
+                              : lesson.type === 'listening'
+                                ? 'headset-outline'
+                                : 'book-outline'
+                          }
+                          size={18}
+                          color={lesson.type === 'listening' ? '#F59E0B' : lesson.type === 'writing' ? '#7C3AED' : '#2563EB'}
+                        />
+                        <Text style={[styles.lessonMeta, !item.unlocked && styles.lockedText]}>{lesson.type}</Text>
+                      </View>
+                      <View style={styles.xpPill}>
+                        <Text style={styles.xpText}>+{lesson.xp_reward ?? lesson.xp ?? 0} XP</Text>
+                      </View>
                     </View>
                   </View>
                   {item.unlocked ? (
@@ -116,11 +120,13 @@ const styles = StyleSheet.create({
   },
   heading: {
     ...t.h1,
-    color: theme.colors.primary
+    color: theme.colors.primary,
+    textAlign: 'center'
   },
   sub: {
     ...t.caption,
-    color: theme.colors.textSecondary
+    color: theme.colors.textSecondary,
+    textAlign: 'center'
   },
   levelCard: {
     backgroundColor: theme.colors.surface,
@@ -142,7 +148,8 @@ const styles = StyleSheet.create({
   levelHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: s.sm
   },
   levelCardLocked: {
     backgroundColor: '#f4f4f4',
@@ -171,8 +178,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: s.sm
   },
+  metaRowWrap: {
+    marginTop: s.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: s.md
+  },
   lessonRowLocked: {
     opacity: 0.6
+  },
+  lessonRowCompleted: {
+    borderColor: theme.colors.accent,
+    borderWidth: 1.5,
+    backgroundColor: '#E8F5E9'
   },
   dot: {
     width: 8,
@@ -191,9 +210,26 @@ const styles = StyleSheet.create({
     ...t.caption,
     color: theme.colors.textSecondary
   },
+  xpPill: {
+    backgroundColor: theme.colors.accent,
+    paddingVertical: s.xs,
+    paddingHorizontal: s.md,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2
+  },
+  xpText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 10
+  },
   start: {
     color: theme.colors.accent,
-    fontWeight: '700'
+    fontWeight: '800',
+    fontSize: 15
   },
   badgeDone: {
     width: 22,

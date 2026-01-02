@@ -31,9 +31,6 @@ export default function ListeningScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Listening</Text>
-      <Text style={styles.sub}>{area?.description || 'Mejora tu comprension auditiva.'}</Text>
-
       {(loadingLessons || loadingQuestions) && (
         <View style={{ paddingVertical: 12 }}>
           <ActivityIndicator color={colors.primary} size="small" />
@@ -69,27 +66,32 @@ export default function ListeningScreen() {
                 >
                   <View style={[styles.dot, !item.unlocked && styles.dotLocked]} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.lessonTitle, !item.unlocked && styles.lockedText]}>{lesson.title}</Text>
-                    <View style={styles.metaRow}>
-                      <Ionicons
-                        name={
-                          lesson.type === 'writing'
-                            ? 'create-outline'
-                            : lesson.type === 'listening'
-                              ? 'headset-outline'
-                              : 'book-outline'
-                        }
-                        size={18}
-                        color={
-                          lesson.type === 'listening'
-                            ? colors.area.listening
-                            : lesson.type === 'writing'
-                              ? colors.area.gramatica
-                              : colors.area.vocabulario
-                        }
-                      />
-                      <Text style={[styles.lessonMeta, !item.unlocked && styles.lockedText]}>{lesson.type}</Text>
-                    </View>
+                      <Text style={[styles.lessonTitle, !item.unlocked && styles.lockedText]}>{lesson.title}</Text>
+                      <View style={styles.metaRowWrap}>
+                        <View style={styles.metaRow}>
+                          <Ionicons
+                            name={
+                              lesson.type === 'writing'
+                                ? 'create-outline'
+                                : lesson.type === 'listening'
+                                  ? 'headset-outline'
+                                  : 'book-outline'
+                            }
+                            size={18}
+                            color={
+                              lesson.type === 'listening'
+                                ? colors.area.listening
+                                : lesson.type === 'writing'
+                                  ? colors.area.gramatica
+                                  : colors.area.vocabulario
+                            }
+                          />
+                          <Text style={[styles.lessonMeta, !item.unlocked && styles.lockedText]}>{lesson.type}</Text>
+                        </View>
+                        <View style={styles.xpPill}>
+                          <Text style={styles.xpText}>+{lesson.xp_reward ?? lesson.xp ?? 0} XP</Text>
+                        </View>
+                      </View>
                   </View>
                   {item.unlocked ? (
                     completedLessons.includes(lesson.id) ? (
@@ -149,7 +151,8 @@ const styles = StyleSheet.create({
   levelHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: s.sm
   },
   levelCardLocked: {
     backgroundColor: '#f4f4f4',
@@ -198,9 +201,32 @@ const styles = StyleSheet.create({
     ...t.caption,
     color: colors.textSecondary
   },
+  metaRowWrap: {
+    marginTop: s.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: s.md
+  },
   start: {
     color: colors.accent,
     fontWeight: '700'
+  },
+  xpPill: {
+    backgroundColor: colors.accent,
+    paddingVertical: s.xs,
+    paddingHorizontal: s.md,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2
+  },
+  xpText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 11
   },
   badgeDone: {
     width: 22,

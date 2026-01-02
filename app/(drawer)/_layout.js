@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Drawer } from 'expo-router/drawer';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
+import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabaseClient';
+import { userService } from '../../lib/userService';
 
 const colors = {
   primary: '#1B5E20',
@@ -12,6 +15,20 @@ const colors = {
 
 function CustomDrawerContent(props) {
   const router = useRouter();
+  const [displayName, setDisplayName] = useState('Usuario');
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    userService.getCurrentUser().then(({ user, profile }) => {
+      if (!mounted) return;
+      setDisplayName(profile?.full_name || user?.email || 'Usuario');
+      setEmail(user?.email || '');
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const goTo = (path) => {
     router.push(path);
@@ -24,7 +41,11 @@ function CustomDrawerContent(props) {
   };
 
   return (
-    <DrawerContentScrollView {...props}>
+    <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 12 }}>
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 4 }}>
+        <Text style={{ fontSize: 16, fontWeight: '800', color: '#1B5E20' }}>{displayName}</Text>
+        <Text style={{ fontSize: 13, color: '#555' }}>{email}</Text>
+      </View>
       <DrawerItem
         label="Inicio"
         onPress={() => goTo('/(drawer)/(tabs)')}
@@ -81,7 +102,7 @@ export default function DrawerLayout() {
       <Drawer.Screen
         name="(tabs)"
         options={{
-          title: 'Inicio',
+          title: 'EnglishQuest',
           drawerIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />
         }}
       />

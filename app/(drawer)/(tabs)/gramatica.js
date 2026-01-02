@@ -1,3 +1,4 @@
+import React, { memo, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../../context/ProgressContext';
@@ -7,6 +8,85 @@ import { theme } from '../../../lib/theme';
 const colors = theme.colors;
 const t = theme.typography;
 const s = theme.spacing;
+
+const LessonRow = memo(function LessonRow({ lesson, unlocked, completed, onPress, xpValue }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.lessonRow,
+        !unlocked && styles.lessonRowLocked,
+        pressed && styles.cardPressed
+      ]}
+      onPress={() => onPress(lesson.id, unlocked)}
+      disabled={!unlocked}
+    >
+      <View style={[styles.dot, !unlocked && styles.dotLocked]} />
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.lessonTitle, !unlocked && styles.lockedText]}>{lesson.title}</Text>
+        <View style={styles.metaRowWrap}>
+          <View style={styles.metaRow}>
+            <Ionicons
+              name={
+                lesson.type === 'writing'
+                  ? 'create-outline'
+                  : lesson.type === 'listening'
+                    ? 'headset-outline'
+                    : 'book-outline'
+              }
+              size={18}
+              color={
+                lesson.type === 'listening'
+                  ? colors.area.listening
+                  : lesson.type === 'writing'
+                    ? colors.area.gramatica
+                    : colors.area.vocabulario
+              }
+            />
+            <Text style={[styles.lessonMeta, !unlocked && styles.lockedText]}>{lesson.type}</Text>
+          </View>
+          <View style={styles.xpPill}>
+            <Text style={styles.xpText}>+{xpValue} XP</Text>
+          </View>
+        </View>
+      </View>
+      {unlocked ? (
+        completed ? (
+          <View style={styles.badgeDone}>
+            <Ionicons name="checkmark" size={14} color="#fff" />
+          </View>
+        ) : null
+      ) : (
+        <Ionicons name="lock-closed" size={18} color="#888" />
+      )}
+      <Text style={[styles.start, !unlocked && styles.lockedText]}>{unlocked ? 'Iniciar' : 'Bloqueado'}</Text>
+    </Pressable>
+  );
+});
+
+const LevelCard = memo(function LevelCard({ item, goToLesson, completedLessons, loadingLessons, xpGetter }) {
+  return (
+    <View style={[styles.levelCard, !item.unlocked && styles.levelCardLocked]}>
+      <View style={styles.levelHeader}>
+        <Text style={[styles.levelTitle, !item.unlocked && styles.lockedText]}>{item.name}</Text>
+        {!item.unlocked && <Text style={styles.lockedBadge}>Se desbloquea en nivel {item.order || item.level}</Text>}
+      </View>
+      {item.lessons.length === 0 ? (
+        <Text style={styles.empty}>{loadingLessons ? 'Cargando lecciones...' : 'Sin lecciones disponibles en este nivel.'}</Text>
+      ) : (
+        item.lessons.map((lesson) => (
+          <LessonRow
+            key={lesson.id}
+            lesson={lesson}
+            unlocked={item.unlocked}
+            completed={completedLessons.includes(lesson.id)}
+            onPress={goToLesson}
+            xpValue={xpGetter ? xpGetter(lesson) : 0}
+          />
+        ))
+      )}
+    </View>
+  );
+});
 
 export default function GramaticaScreen() {
   const router = useRouter();
@@ -24,16 +104,32 @@ export default function GramaticaScreen() {
     return { ...lvl, unlocked, lessons: lessonList };
   });
 
-  const goToLesson = (lessonId, unlocked) => {
-    if (!unlocked) return;
-    router.push(`/lesson/${areaId}/${lessonId}`);
-  };
+  const goToLesson = useCallback(
+    (lessonId, unlocked) => {
+      if (!unlocked) return;
+      router.push(`/lesson/${areaId}/${lessonId}`);
+    },
+    [router]
+  );
+
+  const renderLevel = useCallback(
+    ({ item }) => (
+      <LevelCard
+        item={item}
+        goToLesson={goToLesson}
+        completedLessons={completedLessons}
+        loadingLessons={loadingLessons}
+        colors={colors}
+        t={t}
+        s={s}
+        xpGetter={(lesson) => lesson.xp_reward ?? lesson.xp ?? 0}
+      />
+    ),
+    [completedLessons, goToLesson, loadingLessons]
+  );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Gramatica</Text>
-      <Text style={styles.sub}>{area?.description || 'Refuerza estructuras y tiempos verbales.'}</Text>
-
       {(loadingLessons || loadingQuestions) && (
         <View style={{ paddingVertical: 12 }}>
           <ActivityIndicator color={colors.primary} size="small" />
@@ -43,71 +139,8 @@ export default function GramaticaScreen() {
       <FlatList
         data={groupedByLevel}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.levelCard, !item.unlocked && styles.levelCardLocked]}>
-            <View style={styles.levelHeader}>
-              <Text style={[styles.levelTitle, !item.unlocked && styles.lockedText]}>{item.name}</Text>
-              {!item.unlocked && (
-                <Text style={styles.lockedBadge}>Se desbloquea en nivel {item.order || item.level}</Text>
-              )}
-            </View>
-            {item.lessons.length === 0 ? (
-              <Text style={styles.empty}>
-                {loadingLessons ? 'Cargando lecciones...' : 'Sin lecciones disponibles en este nivel.'}
-              </Text>
-            ) : (
-              item.lessons.map((lesson) => (
-                <Pressable
-                  key={lesson.id}
-                  style={({ pressed }) => [
-                    styles.lessonRow,
-                    !item.unlocked && styles.lessonRowLocked,
-                    pressed && styles.cardPressed
-                  ]}
-                  onPress={() => goToLesson(lesson.id, item.unlocked)}
-                  disabled={!item.unlocked}
-                >
-                  <View style={[styles.dot, !item.unlocked && styles.dotLocked]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.lessonTitle, !item.unlocked && styles.lockedText]}>{lesson.title}</Text>
-                    <View style={styles.metaRow}>
-                      <Ionicons
-                        name={
-                          lesson.type === 'writing'
-                            ? 'create-outline'
-                            : lesson.type === 'listening'
-                              ? 'headset-outline'
-                              : 'book-outline'
-                        }
-                        size={18}
-                        color={
-                          lesson.type === 'listening'
-                            ? colors.area.listening
-                            : lesson.type === 'writing'
-                              ? colors.area.gramatica
-                              : colors.area.vocabulario
-                        }
-                      />
-                      <Text style={[styles.lessonMeta, !item.unlocked && styles.lockedText]}>{lesson.type}</Text>
-                    </View>
-                  </View>
-                  {item.unlocked ? (
-                    completedLessons.includes(lesson.id) ? (
-                      <View style={styles.badgeDone}>
-                        <Ionicons name="checkmark" size={14} color="#fff" />
-                      </View>
-                    ) : null
-                  ) : (
-                    <Ionicons name="lock-closed" size={18} color="#888" />
-                  )}
-                  <Text style={[styles.start, !item.unlocked && styles.lockedText]}>
-                    {item.unlocked ? 'Iniciar' : 'Bloqueado'}
-                  </Text>
-                </Pressable>
-              ))
-            )}
-          </View>
-        )}
+        renderItem={renderLevel}
+        extraData={completedLessons}
         contentContainerStyle={{ gap: 12, paddingBottom: 24 }}
       />
     </View>
@@ -149,7 +182,8 @@ const styles = StyleSheet.create({
   levelHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: s.sm
   },
   levelCardLocked: {
     backgroundColor: '#f4f4f4',
@@ -198,9 +232,32 @@ const styles = StyleSheet.create({
     ...t.caption,
     color: colors.textSecondary
   },
+  metaRowWrap: {
+    marginTop: s.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: s.md
+  },
   start: {
     color: colors.accent,
     fontWeight: '700'
+  },
+  xpPill: {
+    backgroundColor: colors.accent,
+    paddingVertical: s.xs,
+    paddingHorizontal: s.md,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2
+  },
+  xpText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 11
   },
   badgeDone: {
     width: 22,

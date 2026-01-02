@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
-  KeyboardAvoidingView,
-  Platform,
   Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,13 +36,9 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
-
-  const emailRef = useRef(null);
-  const passwordRef = useRef(null);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -154,66 +148,52 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 16 : 0}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentInsetAdjustmentBehavior="automatic"
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="none"
-          contentInsetAdjustmentBehavior="always"
-        >
-          <View style={[styles.header, { height: headerHeight }]}>
-            <View style={styles.dotsContainer}>{renderDots()}</View>
-            <View style={styles.headerContent}>
-              <View style={styles.logoBox}>
-                <Image source={logo} style={styles.logoImage} resizeMode="cover" />
-              </View>
-              <Text style={styles.headerTitle}>EnglishQuest</Text>
-              <Text style={styles.headerSubtitle}>Aprende ingles jugando</Text>
+        <View style={[styles.header, { height: headerHeight }]}>
+          <View style={styles.dotsContainer}>{renderDots()}</View>
+          <View style={styles.headerContent}>
+            <View style={styles.logoBox}>
+              <Image source={logo} style={styles.logoImage} resizeMode="cover" />
             </View>
+            <Text style={styles.headerTitle}>EnglishQuest</Text>
+            <Text style={styles.headerSubtitle}>Aprende ingles jugando</Text>
           </View>
+        </View>
 
-          <View style={styles.sheet}>
-            <View style={styles.tabsContainer}>
-              <TouchableOpacity style={styles.tab} activeOpacity={0.9}>
-                <Text style={[styles.tabText, styles.activeTabText]}>Registrarse</Text>
-                <View style={styles.activeBar} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.tab} onPress={() => router.replace('/(auth)/login')} activeOpacity={0.85}>
-                <Text style={styles.tabText}>Iniciar Sesion</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.sheet}>
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity style={styles.tab} onPress={() => router.replace('/(auth)/login')} activeOpacity={0.85}>
+              <Text style={styles.tabText}>Iniciar Sesion</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.tab} activeOpacity={0.9}>
+              <Text style={[styles.tabText, styles.activeTabText]}>Registrarse</Text>
+              <View style={styles.activeBar} />
+            </TouchableOpacity>
+          </View>
 
             <View style={styles.formContainer}>
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Nombre completo</Text>
                 <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === 'fullName' && styles.inputWrapperFocused,
-                    fieldErrors.fullName && styles.inputWrapperError
-                  ]}
+                  style={[styles.inputWrapper, fieldErrors.fullName && styles.inputWrapperError]}
                 >
                   <Ionicons name="shield-checkmark-outline" size={20} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={fullName}
-                    onChangeText={(text) => {
-                      setFullName(text);
-                      validateField('fullName', text);
+                  onChangeText={(text) => {
+                    setFullName(text);
+                    validateField('fullName', text);
                     }}
                     placeholder="Tu nombre de heroe"
                     placeholderTextColor="#A0A0A0"
-                    onFocus={() => setFocusedField('fullName')}
-                    onBlur={() => setFocusedField(null)}
                     autoCapitalize="words"
-                    returnKeyType="next"
-                    blurOnSubmit={false}
-                    onSubmitEditing={() => emailRef.current?.focus()}
                   />
                 </View>
                 {fieldErrors.fullName ? <Text style={styles.fieldError}>{fieldErrors.fullName}</Text> : null}
@@ -222,30 +202,20 @@ export default function RegisterScreen() {
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Correo electronico</Text>
                 <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === 'email' && styles.inputWrapperFocused,
-                    fieldErrors.email && styles.inputWrapperError
-                  ]}
+                  style={[styles.inputWrapper, fieldErrors.email && styles.inputWrapperError]}
                 >
                   <Ionicons name="mail-outline" size={20} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={email}
-                    onChangeText={(text) => {
-                      setEmail(text);
-                      validateField('email', text);
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    validateField('email', text);
                     }}
                     placeholder="ejemplo@email.com"
                     placeholderTextColor="#A0A0A0"
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    returnKeyType="next"
-                    ref={emailRef}
-                    blurOnSubmit={false}
-                    onSubmitEditing={() => passwordRef.current?.focus()}
                   />
                 </View>
                 {fieldErrors.email ? <Text style={styles.fieldError}>{fieldErrors.email}</Text> : null}
@@ -254,60 +224,51 @@ export default function RegisterScreen() {
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Contrasena</Text>
                 <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === 'password' && styles.inputWrapperFocused,
-                    fieldErrors.password && styles.inputWrapperError
-                  ]}
+                  style={[styles.inputWrapper, fieldErrors.password && styles.inputWrapperError]}
                 >
                   <Ionicons name="lock-closed-outline" size={20} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={password}
-                    onChangeText={(text) => {
-                      setPassword(text);
-                      validateField('password', text);
-                    }}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    validateField('password', text);
+                  }}
                     placeholder="********"
                     placeholderTextColor="#A0A0A0"
                     secureTextEntry={!showPassword}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                    returnKeyType="done"
-                    ref={passwordRef}
                   />
                   <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)} hitSlop={10}>
                     <Ionicons
                       name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={20}
-                      style={styles.eyeIcon}
-                    />
-                  </TouchableOpacity>
-                </View>
-                {fieldErrors.password ? <Text style={styles.fieldError}>{fieldErrors.password}</Text> : null}
-                <Text style={[styles.securityText, { color: passwordSecurityColor }]}>
-                  Nivel de seguridad: Principiante
-                </Text>
+                    size={20}
+                    style={styles.eyeIcon}
+                  />
+                </TouchableOpacity>
               </View>
-
-              <TouchableOpacity style={styles.forgotButton} activeOpacity={0.7}>
-                <Text style={styles.forgotText}>Olvidaste tu contrasena?</Text>
-              </TouchableOpacity>
-
-              {error ? <Text style={styles.formError}>{error}</Text> : null}
-
-              <TouchableOpacity
-                style={[styles.ctaButton, loading && styles.ctaButtonDisabled]}
-                onPress={handleRegister}
-                activeOpacity={0.9}
-                disabled={loading}
-              >
-                <Text style={styles.ctaText}>{loading ? 'Creando...' : 'Comenzar Aventura 🚀'}</Text>
-              </TouchableOpacity>
+              {fieldErrors.password ? <Text style={styles.fieldError}>{fieldErrors.password}</Text> : null}
+              <Text style={[styles.securityText, { color: passwordSecurityColor }]}>
+                Nivel de seguridad: Principiante
+              </Text>
             </View>
+
+            <TouchableOpacity style={styles.forgotButton} activeOpacity={0.7}>
+              <Text style={styles.forgotText}>Olvidaste tu contrasena?</Text>
+            </TouchableOpacity>
+
+            {error ? <Text style={styles.formError}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.ctaButton, loading && styles.ctaButtonDisabled]}
+              onPress={handleRegister}
+              activeOpacity={0.9}
+              disabled={loading}
+            >
+              <Text style={styles.ctaText}>{loading ? 'Creando...' : 'Comenzar Aventura'}</Text>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

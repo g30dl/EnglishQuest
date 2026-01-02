@@ -61,28 +61,26 @@ export default function HomeScreen() {
   }, [lessons, completedLessons]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: s.xl }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: s.xl, gap: s.xl }}>
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       ) : (
         <>
-          <View style={styles.header}>
-            <View style={styles.brand}>
-              <View style={styles.logoDot} />
-              <Text style={styles.brandText}>EnglishQuest</Text>
-            </View>
-          </View>
-
-          <View style={styles.profileCard}>
+          <Pressable
+            style={({ pressed }) => [styles.profileCard, pressed && styles.cardPressed]}
+            onPress={() => router.push('/(drawer)/perfil')}
+          >
             <View style={styles.profileHeader}>
               <View style={styles.avatar}>
                 <Ionicons name="person-outline" size={32} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.greeting}>Hola, {displayName}</Text>
-                <Text style={styles.role}>{roleLabel}</Text>
+                <Text style={styles.role}>
+                  {roleLabel} · Nivel {levelNumber}
+                </Text>
               </View>
               <View style={styles.xpPill}>
                 <Ionicons name="flash-outline" size={18} color={colors.accent} />
@@ -100,7 +98,7 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.progressHint}>{xpToNextLevel} XP para level {levelNumber + 1}</Text>
             </View>
-          </View>
+          </Pressable>
 
           <Pressable
             style={({ pressed }) => [styles.cta, pressed && styles.cardPressed]}
@@ -126,7 +124,7 @@ export default function HomeScreen() {
           </View>
 
           <Pressable
-            style={({ pressed }) => [styles.areaCard, pressed && styles.cardPressed]}
+            style={({ pressed }) => [styles.areaCard, pressed && styles.cardPressed, { marginVertical: 0 }]}
             onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}
           >
             <View style={[styles.areaIconBlue, { backgroundColor: theme.colors.area.vocabulario }]}>
@@ -155,17 +153,27 @@ export default function HomeScreen() {
               ]}
               onPress={() => router.push('/(drawer)/(tabs)/gramatica')}
             >
-              <View style={[styles.miniIcon, { backgroundColor: theme.colors.area.gramatica }]}>
-                <Ionicons name="pencil-outline" size={22} color="#fff" />
+              <View style={styles.miniHeader}>
+                <View style={styles.miniInfo}>
+                  <Text style={styles.miniTitle}>Gramatica</Text>
+                  <Text style={styles.miniSubtitle}>Estructuras y tiempos</Text>
+                </View>
               </View>
-              <Text style={styles.miniTitle}>Gramatica</Text>
-              <Text style={styles.miniStat}>
-                {areaStats.gramatica.total} lecciones ({areaStats.gramatica.percent}% completadas)
-              </Text>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {areaStats.gramatica.completed}/{areaStats.gramatica.total || 0}
-                </Text>
+              <View style={styles.miniProgressTrack}>
+                <View
+                  style={[
+                    styles.miniProgressFill,
+                    { width: `${areaStats.gramatica.percent}%`, backgroundColor: theme.colors.area.gramatica }
+                  ]}
+                />
+              </View>
+              <View style={styles.miniFooter}>
+                <Text style={styles.miniFootText}>Lecciones</Text>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {areaStats.gramatica.completed}/{areaStats.gramatica.total || 0}
+                  </Text>
+                </View>
               </View>
             </Pressable>
             <Pressable
@@ -176,17 +184,27 @@ export default function HomeScreen() {
               ]}
               onPress={() => router.push('/(drawer)/(tabs)/listening')}
             >
-              <View style={[styles.miniIcon, { backgroundColor: theme.colors.area.listening }]}>
-                <Ionicons name="headset-outline" size={22} color="#fff" />
+              <View style={styles.miniHeader}>
+                <View style={styles.miniInfo}>
+                  <Text style={styles.miniTitle}>Listening</Text>
+                  <Text style={styles.miniSubtitle}>Comprension auditiva</Text>
+                </View>
               </View>
-              <Text style={styles.miniTitle}>Listening</Text>
-              <Text style={styles.miniStat}>
-                {areaStats.listening.completed} lecciones completadas ({areaStats.listening.percent}%)
-              </Text>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {areaStats.listening.completed}/{areaStats.listening.total || 0}
-                </Text>
+              <View style={styles.miniProgressTrack}>
+                <View
+                  style={[
+                    styles.miniProgressFill,
+                    { width: `${areaStats.listening.percent}%`, backgroundColor: theme.colors.area.listening }
+                  ]}
+                />
+              </View>
+              <View style={styles.miniFooter}>
+                <Text style={styles.miniFootText}>Lecciones</Text>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {areaStats.listening.completed}/{areaStats.listening.total || 0}
+                  </Text>
+                </View>
               </View>
             </Pressable>
           </View>
@@ -200,28 +218,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: s.xl
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  brand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s.sm
-  },
-  logoDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary
-  },
-  brandText: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.primary
+    paddingHorizontal: s.xl,
+    paddingTop: s.lg
   },
   profileCard: {
     backgroundColor: colors.card,
@@ -345,8 +343,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: s.sm,
-    marginBottom: s.md
+    marginTop: s.xs,
+    marginBottom: s.sm
   },
   sectionTitle: {
     ...t.h2,
@@ -359,10 +357,11 @@ const styles = StyleSheet.create({
   areaCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
-    padding: s.xl,
+    paddingVertical: s.md,
+    paddingHorizontal: s.xl,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 10,
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
@@ -403,13 +402,17 @@ const styles = StyleSheet.create({
   },
   miniRow: {
     flexDirection: 'row',
-    gap: 16
+    gap: s.sm,
+    marginTop: s.sm
   },
   miniCard: {
     flex: 1,
     borderRadius: 16,
     padding: s.xl,
     gap: s.md,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: colors.card,
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
@@ -418,20 +421,46 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0'
   },
-  miniIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
   miniTitle: {
     ...t.h3,
     color: theme.colors.textPrimary
   },
+  miniSubtitle: {
+    ...t.caption,
+    color: theme.colors.textSecondary
+  },
   miniStat: {
     ...t.caption,
     color: theme.colors.textSecondary
+  },
+  miniHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: s.md
+  },
+  miniInfo: {
+    flex: 1
+  },
+  miniFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  miniFootText: {
+    ...t.caption,
+    color: theme.colors.textSecondary
+  },
+  miniProgressTrack: {
+    height: 10,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginTop: s.xs
+  },
+  miniProgressFill: {
+    height: 10,
+    borderRadius: 8
   },
   cardPressed: {
     transform: [{ scale: 0.98 }],

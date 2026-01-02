@@ -37,13 +37,9 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
-
-  const emailRef = useRef(null);
-  const passwordRef = useRef(null);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -123,14 +119,14 @@ export default function LoginScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 16 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
           keyboardDismissMode="none"
-          contentInsetAdjustmentBehavior="always"
+          contentInsetAdjustmentBehavior="automatic"
         >
           <View style={[styles.header, { height: headerHeight }]}>
             <View style={styles.dotsContainer}>{renderDots()}</View>
@@ -143,79 +139,61 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <View style={styles.sheet}>
-            <View style={styles.tabsContainer}>
-              <TouchableOpacity style={styles.tab} onPress={() => router.replace('/(auth)/register')} activeOpacity={0.85}>
-                <Text style={styles.tabText}>Registrarse</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.tab} activeOpacity={0.9}>
-                <Text style={[styles.tabText, styles.activeTabText]}>Iniciar Sesion</Text>
-                <View style={styles.activeBar} />
-              </TouchableOpacity>
-            </View>
+        <View style={styles.sheet}>
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity style={styles.tab} activeOpacity={0.9}>
+              <Text style={[styles.tabText, styles.activeTabText]}>Iniciar Sesion</Text>
+              <View style={styles.activeBar} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.tab} onPress={() => router.replace('/(auth)/register')} activeOpacity={0.85}>
+              <Text style={styles.tabText}>Registrarse</Text>
+            </TouchableOpacity>
+          </View>
 
             <View style={styles.formContainer}>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Correo electronico</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === 'email' && styles.inputWrapperFocused,
-                    fieldErrors.email && styles.inputWrapperError
-                  ]}
-                >
-                  <Ionicons name="mail-outline" size={20} style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    value={email}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Correo electronico</Text>
+              <View
+                style={[styles.inputWrapper, fieldErrors.email && styles.inputWrapperError]}
+              >
+                <Ionicons name="mail-outline" size={20} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={email}
                     onChangeText={(text) => {
                       setEmail(text);
                       validateField('email', text);
                     }}
-                    placeholder="ejemplo@email.com"
-                    placeholderTextColor="#A0A0A0"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    returnKeyType="next"
-                    ref={emailRef}
-                    blurOnSubmit={false}
-                    onSubmitEditing={() => passwordRef.current?.focus()}
-                  />
-                </View>
-                {fieldErrors.email ? <Text style={styles.fieldError}>{fieldErrors.email}</Text> : null}
+                  placeholder="ejemplo@email.com"
+                  placeholderTextColor="#A0A0A0"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
               </View>
+              {fieldErrors.email ? <Text style={styles.fieldError}>{fieldErrors.email}</Text> : null}
+            </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Contrasena</Text>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    focusedField === 'password' && styles.inputWrapperFocused,
-                    fieldErrors.password && styles.inputWrapperError
-                  ]}
-                >
-                  <Ionicons name="lock-closed-outline" size={20} style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    value={password}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Contrasena</Text>
+              <View
+                style={[styles.inputWrapper, fieldErrors.password && styles.inputWrapperError]}
+              >
+                <Ionicons name="lock-closed-outline" size={20} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={password}
                     onChangeText={(text) => {
                       setPassword(text);
                       validateField('password', text);
                     }}
-                    placeholder="********"
-                    placeholderTextColor="#A0A0A0"
-                    secureTextEntry={!showPassword}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                    returnKeyType="done"
-                    ref={passwordRef}
-                  />
-                  <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)} hitSlop={10}>
-                    <Ionicons
-                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={20}
+                  placeholder="********"
+                  placeholderTextColor="#A0A0A0"
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)} hitSlop={10}>
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
                       style={styles.eyeIcon}
                     />
                   </TouchableOpacity>
@@ -227,15 +205,15 @@ export default function LoginScreen() {
                 <Text style={styles.forgotText}>Olvidaste tu contrasena?</Text>
               </TouchableOpacity>
 
-              {error ? <Text style={styles.formError}>{error}</Text> : null}
+            {error ? <Text style={styles.formError}>{error}</Text> : null}
 
-              <TouchableOpacity
-                style={[styles.ctaButton, loading && styles.ctaButtonDisabled]}
-                onPress={handleLogin}
-                activeOpacity={0.9}
-                disabled={loading}
-              >
-                <Text style={styles.ctaText}>{loading ? 'Ingresando...' : 'Ingresar'}</Text>
+            <TouchableOpacity
+              style={[styles.ctaButton, loading && styles.ctaButtonDisabled]}
+              onPress={handleLogin}
+              activeOpacity={0.9}
+              disabled={loading}
+            >
+              <Text style={styles.ctaText}>{loading ? 'Ingresando...' : 'Ingresar'}</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, ActivityIndicator, Animated } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useProgress } from '../../../../context/ProgressContext';
 import * as Speech from 'expo-speech';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -12,6 +12,7 @@ export default function LessonRunnerScreen() {
   const { areaId, lessonId } = useLocalSearchParams();
   const router = useRouter();
   const { lessons, questions, lessonById, answerQuestion, completeLesson, loading } = useProgress();
+  const navigation = useNavigation();
 
   const lesson = lessonById(lessonId);
   const lessonQuestions = useMemo(
@@ -38,6 +39,14 @@ export default function LessonRunnerScreen() {
   const percent = total === 0 ? 0 : Math.round(((index) / total) * 100);
 
   const progressAnim = useRef(new Animated.Value(percent)).current;
+
+  useEffect(() => {
+    if (lesson?.title) {
+      navigation.setOptions({ title: lesson.title });
+    } else {
+      navigation.setOptions({ title: 'Leccion' });
+    }
+  }, [lesson?.title, navigation]);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
