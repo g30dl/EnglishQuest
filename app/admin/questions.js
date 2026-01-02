@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { supabase } from '../../lib/supabaseClient';
 import { useProgress } from '../../context/ProgressContext';
 
 const colors = {

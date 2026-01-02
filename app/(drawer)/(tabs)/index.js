@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../../context/ProgressContext';
@@ -37,15 +37,12 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <View style={styles.header}>
         <View style={styles.brand}>
           <View style={styles.logoDot} />
           <Text style={styles.brandText}>EnglishQuest</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push('/(drawer)/perfil')}>
-          <Ionicons name="settings-outline" size={26} color={colors.primary} />
-        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -130,7 +127,7 @@ export default function HomeScreen() {
           </View>
         </>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -138,8 +135,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 20,
-    gap: 14
+    padding: 20
   },
   header: {
     flexDirection: 'row',

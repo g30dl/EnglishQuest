@@ -44,13 +44,31 @@ export function ProgressProvider({ children }) {
   }, []);
 
   const hydrateLessons = useCallback((rows) => {
-    if (!rows?.length) return [];
-    return rows
-      .filter((row) => row.is_active !== false)
+    console.log('hydrateLessons: rows', rows?.length ?? 0);
+    if (!rows?.length) {
+      console.log('hydrateLessons: no rows to process');
+      return [];
+    }
+    const result = rows
+      .filter((row) => {
+        const isActive = row.is_active !== false;
+        if (!isActive) {
+          console.log('hydrateLessons: lesson inactive', row.id, row.title);
+        }
+        return isActive;
+      })
       .map((row) => {
         const areaId = normalizeArea(row.area);
         const levelNum = row.level || row.order_index || 1;
         const levelId = `lvl-${areaId}-${levelNum}`;
+        console.log('hydrateLessons: mapped', {
+          id: row.id,
+          title: row.title,
+          area: row.area,
+          areaId,
+          levelNum,
+          levelId
+        });
         return {
           id: row.id,
           levelId,
@@ -64,14 +82,26 @@ export function ProgressProvider({ children }) {
         };
       })
       .sort((a, b) => (a.order || 0) - (b.order || 0));
+    console.log('hydrateLessons: result', result.length);
+    return result;
   }, []);
 
   const hydrateQuestions = useCallback((rows) => {
-    if (!rows?.length) return [];
-    return rows.map((row) => {
+    console.log('hydrateQuestions: rows', rows?.length ?? 0);
+    if (!rows?.length) {
+      console.log('hydrateQuestions: no rows to process');
+      return [];
+    }
+    const result = rows.map((row) => {
       const options = Array.isArray(row.options) ? row.options : [];
       const correctAnswer = row.correct_answer || '';
       const answerIndex = options.findIndex((opt) => opt === correctAnswer);
+      console.log('hydrateQuestions: mapped', {
+        id: row.id,
+        lessonId: row.lesson_id,
+        type: row.question_type,
+        answerIndex
+      });
       return {
         id: row.id,
         lessonId: row.lesson_id,
@@ -85,19 +115,39 @@ export function ProgressProvider({ children }) {
         order: row.order_index || 0
       };
     });
+    console.log('hydrateQuestions: result', result.length);
+    return result;
   }, []);
 
   const hydrateLevels = useCallback((rows, userLevel) => {
-    if (!rows?.length) return [];
-    const parsed = rows.map((row) => ({
-      id: row.id || `lvl-${normalizeArea(row.area)}-${row.order_index || row.level || 1}`,
-      areaId: normalizeArea(row.area),
-      name: row.name || `Nivel ${row.order_index || row.level || 1}`,
-      order: row.order_index || row.level || 1
-    }));
-    return parsed
+    console.log('hydrateLevels: rows', rows?.length ?? 0, 'userLevel', userLevel);
+    if (!rows?.length) {
+      console.log('hydrateLevels: no rows to process');
+      return [];
+    }
+    const parsed = rows.map((row) => {
+      const areaId = normalizeArea(row.area);
+      const orderNum = row.order_index || row.level || 1;
+      const levelId = row.id || `lvl-${areaId}-${orderNum}`;
+      console.log('hydrateLevels: mapped', {
+        id: levelId,
+        area: row.area,
+        areaId,
+        order: orderNum,
+        name: row.name
+      });
+      return {
+        id: levelId,
+        areaId,
+        name: row.name || `Nivel ${orderNum}`,
+        order: orderNum
+      };
+    });
+    const result = parsed
       .sort((a, b) => (a.order || 0) - (b.order || 0))
       .map((lvl) => ({ ...lvl, unlocked: (lvl.order || 1) <= (userLevel || 1) }));
+    console.log('hydrateLevels: result', result.length);
+    return result;
   }, []);
 
   const loadUserData = useCallback(async () => {
@@ -116,6 +166,10 @@ export function ProgressProvider({ children }) {
       setLoadingLessons(true);
       setLoadingQuestions(true);
 
+      console.log('=== Diagnostico de carga ===');
+      console.log('Usuario logueado:', user.id);
+      console.log('Consultando Supabase...');
+
       const [
         { data: areasData, error: areasError },
         { data: levelsData, error: levelsError },
@@ -128,16 +182,16 @@ export function ProgressProvider({ children }) {
         supabase.from('questions').select('*')
       ]);
 
-      console.log('Cargando datos...');
-      console.log('Areas:', areasData?.length ?? 0);
-      console.log('Levels:', levelsData?.length ?? 0);
-      console.log('Lessons:', lessonsData?.length ?? 0);
-      console.log('Questions:', questionsData?.length ?? 0);
+      if (areasError) console.error('Error areas:', areasError);
+      if (levelsError) console.error('Error levels:', levelsError);
+      if (lessonsError) console.error('Error lessons:', lessonsError);
+      if (questionsError) console.error('Error questions:', questionsError);
 
-      if (areasError) console.warn('No se pudieron cargar areas', areasError.message);
-      if (levelsError) console.warn('No se pudieron cargar niveles', levelsError.message);
-      if (lessonsError) console.warn('No se pudieron cargar lecciones', lessonsError.message);
-      if (questionsError) console.warn('No se pudieron cargar preguntas', questionsError.message);
+      console.log('Datos recibidos:');
+      console.log('Areas:', areasData?.length ?? 0, areasData);
+      console.log('Levels:', levelsData?.length ?? 0, levelsData);
+      console.log('Lessons:', lessonsData?.length ?? 0, lessonsData);
+      console.log('Questions:', questionsData?.length ?? 0, questionsData);
 
       const safeAreas =
         (areasData || []).map((a) => ({
@@ -156,10 +210,12 @@ export function ProgressProvider({ children }) {
       const hydratedLessons = hydrateLessons(lessonsData);
       setLessons(hydratedLessons);
       setLoadingLessons(false);
+      console.log('Lessons hidratadas:', hydratedLessons.length);
 
       const hydratedQuestions = hydrateQuestions(questionsData);
       setQuestions(hydratedQuestions);
       setLoadingQuestions(false);
+      console.log('Questions hidratadas:', hydratedQuestions.length);
 
       const { data: progressData, error: progressError } = await supabase
         .from('user_progress')
@@ -186,8 +242,10 @@ export function ProgressProvider({ children }) {
       const meta = computeXpMeta(totalXp);
       setLevelNumber(level || meta.lv);
       setXpToNextLevel(meta.toNext);
+      console.log('Carga completa');
+      console.log('=== Fin diagnostico ===');
     } catch (err) {
-      console.warn('Error inesperado al cargar datos', err.message);
+      console.error('Error inesperado al cargar datos', err);
       setError('No se pudieron cargar datos remotos.');
     } finally {
       setLoading(false);
@@ -200,6 +258,12 @@ export function ProgressProvider({ children }) {
 
   useEffect(() => {
     loadUserData();
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadUserData();
+      }
+    });
+
     // Subscripciones en tiempo real a cambios de BD para refrescar cache
     const channel = supabase
       .channel('realtime-sync')
@@ -230,6 +294,7 @@ export function ProgressProvider({ children }) {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
+      authListener?.subscription?.unsubscribe();
     };
   }, [loadUserData]);
 

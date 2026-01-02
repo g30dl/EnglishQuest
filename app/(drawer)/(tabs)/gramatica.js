@@ -10,18 +10,22 @@ const colors = {
 
 export default function GramaticaScreen() {
   const router = useRouter();
-  const { areas, unlockedLevels, lessons, loadingLessons, loadingQuestions } = useProgress();
+  const { areas, levels, lessons, levelNumber, loadingLessons, loadingQuestions } = useProgress();
 
   const areaId = 'gramatica';
   const area = areas.find((a) => a.id === areaId);
-  const availableLevels = unlockedLevels.filter((lvl) => lvl.areaId === areaId);
-  const availableLessons = lessons.filter((ls) => availableLevels.some((lvl) => lvl.id === ls.levelId));
-  const groupedByLevel = availableLevels.map((lvl) => ({
-    ...lvl,
-    lessons: availableLessons.filter((ls) => ls.levelId === lvl.id)
-  }));
+  const levelsByArea = levels.filter((lvl) => lvl.areaId === areaId).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  const goToLesson = (lessonId) => {
+  const groupedByLevel = levelsByArea.map((lvl) => {
+    const lessonList = lessons.filter(
+      (ls) => ls.areaId === areaId && ((ls.level || ls.order) === (lvl.order || lvl.level))
+    );
+    const unlocked = (lvl.order || 1) <= levelNumber;
+    return { ...lvl, unlocked, lessons: lessonList };
+  });
+
+  const goToLesson = (lessonId, unlocked) => {
+    if (!unlocked) return;
     router.push(`/lesson/${areaId}/${lessonId}`);
   };
 
@@ -40,21 +44,35 @@ export default function GramaticaScreen() {
         data={groupedByLevel}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.levelCard}>
-            <Text style={styles.levelTitle}>{item.name}</Text>
+          <View style={[styles.levelCard, !item.unlocked && styles.levelCardLocked]}>
+            <View style={styles.levelHeader}>
+              <Text style={[styles.levelTitle, !item.unlocked && styles.lockedText]}>{item.name}</Text>
+              {!item.unlocked && (
+                <Text style={styles.lockedBadge}>Se desbloquea en nivel {item.order || item.level}</Text>
+              )}
+            </View>
             {item.lessons.length === 0 ? (
               <Text style={styles.empty}>
                 {loadingLessons ? 'Cargando lecciones...' : 'Sin lecciones disponibles en este nivel.'}
               </Text>
             ) : (
               item.lessons.map((lesson) => (
-                <TouchableOpacity key={lesson.id} style={styles.lessonRow} onPress={() => goToLesson(lesson.id)}>
-                  <View style={styles.dot} />
+                <TouchableOpacity
+                  key={lesson.id}
+                  style={[styles.lessonRow, !item.unlocked && styles.lessonRowLocked]}
+                  onPress={() => goToLesson(lesson.id, item.unlocked)}
+                  disabled={!item.unlocked}
+                >
+                  <View style={[styles.dot, !item.unlocked && styles.dotLocked]} />
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.lessonTitle}>{lesson.title}</Text>
-                    <Text style={styles.lessonMeta}>Tipo: {lesson.type}</Text>
+                    <Text style={[styles.lessonTitle, !item.unlocked && styles.lockedText]}>{lesson.title}</Text>
+                    <Text style={[styles.lessonMeta, !item.unlocked && styles.lockedText]}>
+                      Tipo: {lesson.type}
+                    </Text>
                   </View>
-                  <Text style={styles.start}>Iniciar</Text>
+                  <Text style={[styles.start, !item.unlocked && styles.lockedText]}>
+                    {item.unlocked ? 'Iniciar' : 'Bloqueado'}
+                  </Text>
                 </TouchableOpacity>
               ))
             )}
@@ -98,17 +116,39 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2e2e2e'
   },
+  levelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  levelCardLocked: {
+    backgroundColor: '#f4f4f4',
+    borderColor: '#d0d0d0'
+  },
+  lockedBadge: {
+    fontSize: 12,
+    color: '#777'
+  },
+  lockedText: {
+    color: '#888'
+  },
   lessonRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingVertical: 8
   },
+  lessonRowLocked: {
+    opacity: 0.6
+  },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.accent
+  },
+  dotLocked: {
+    backgroundColor: '#aaa'
   },
   lessonTitle: {
     fontSize: 16,
