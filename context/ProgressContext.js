@@ -346,6 +346,7 @@ export function ProgressProvider({ children }) {
 
       if (!currentUserId) return;
       try {
+        await userService.updateStreak(currentUserId);
         const payload = {
           user_id: currentUserId,
           lesson_id: lessonId,
@@ -393,6 +394,7 @@ export function ProgressProvider({ children }) {
       }
       if (!currentUserId) return;
       try {
+        await userService.updateStreak(currentUserId);
         const payload = {
           user_id: currentUserId,
           question_id: questionId,
@@ -458,15 +460,16 @@ export function ProgressProvider({ children }) {
         if (!result.success) return result;
         const data = result.data;
         const areaId = normalizeArea(data.area);
+        const levelVal = data.level || 1;
         setLessons((prev) => [
           ...prev,
           {
             id: data.id,
-            levelId: `lvl-${data.level || 1}-${areaId}`,
+            levelId: `lvl-${areaId}-${levelVal}`,
             title: data.title,
             type: data.type || 'reading',
             areaId,
-            level: data.level || 1,
+            level: levelVal,
             xp_reward: data.xp_reward || XP_PER_LESSON,
             order: data.order_index || 0,
             description: data.description || ''
@@ -489,16 +492,17 @@ export function ProgressProvider({ children }) {
         if (!result.success) return result;
         const data = result.data;
         const areaId = normalizeArea(data.area);
+        const levelVal = data.level || 1;
         setLessons((prev) =>
           prev.map((ls) =>
             ls.id === id
               ? {
                   id: data.id,
-                  levelId: `lvl-${data.level || 1}-${areaId}`,
+                  levelId: `lvl-${areaId}-${levelVal}`,
                   title: data.title,
                   type: data.type || 'reading',
                   areaId,
-                  level: data.level || 1,
+                  level: levelVal,
                   xp_reward: data.xp_reward || XP_PER_LESSON,
                   order: data.order_index || 0,
                   description: data.description || ''
@@ -540,7 +544,7 @@ export function ProgressProvider({ children }) {
             question_text: payload.prompt,
             correct_answer: payload.answerText || payload.correct_answer || '',
             options: payload.options || null,
-            // answer_index columna puede no existir; no la enviamos si no está en el esquema
+            // answer_index columna puede no existir; no se envia si la columna no esta en el esquema
             order_index: payload.order || questions.length,
             audio_text: payload.audioText || payload.prompt
           })
@@ -558,7 +562,12 @@ export function ProgressProvider({ children }) {
             prompt: data.question_text,
             audioText: data.audio_text || data.question_text,
             options: data.options,
-            answerIndex: data.answer_index,
+            answerIndex:
+              typeof data.answer_index === 'number'
+                ? data.answer_index
+                : Array.isArray(data.options)
+                  ? data.options.findIndex((opt) => opt === data.correct_answer)
+                  : undefined,
             answerText: data.correct_answer
           }
         ]);

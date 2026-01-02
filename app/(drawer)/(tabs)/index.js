@@ -22,6 +22,7 @@ export default function HomeScreen() {
   const formattedXp = xp.toLocaleString('es-ES');
   const [displayName, setDisplayName] = useState('Estudiante');
   const [roleLabel, setRoleLabel] = useState('Explorador');
+  const [streakDays, setStreakDays] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -30,6 +31,7 @@ export default function HomeScreen() {
       const name = profile?.full_name || user?.email || 'Estudiante';
       setDisplayName(name);
       setRoleLabel(role === 'admin' ? 'Administrador' : 'Explorador');
+      setStreakDays(profile?.streak_days || 0);
     });
     return () => {
       mounted = false;
@@ -85,7 +87,7 @@ export default function HomeScreen() {
               </View>
               <View>
                 <Text style={styles.ctaText}>EMPEZAR A APRENDER</Text>
-                <Text style={styles.ctaSub}>Continua tu racha de 3 dias</Text>
+                <Text style={styles.ctaSub}>Racha: {streakDays} dias</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={22} color="#fff" />

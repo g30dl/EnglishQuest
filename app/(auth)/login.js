@@ -28,7 +28,10 @@ export default function LoginScreen() {
     }
 
     // Detecta rol y redirige al home correcto
-    const { role } = await userService.getCurrentUser();
+    const { user, role } = await userService.getCurrentUser();
+    if (user?.id) {
+      await userService.updateStreak(user.id);
+    }
     if (role === 'admin') {
       router.replace('/admin');
     } else {

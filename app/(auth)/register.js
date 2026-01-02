@@ -12,6 +12,7 @@ const colors = {
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,20 +21,55 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     setError(null);
     setLoading(true);
-    const { error: signUpError } = await supabase.auth.signUp({ email, password });
-    if (signUpError) {
-      setError(signUpError.message);
-      setLoading(false);
-      return;
-    }
+    try {
+      if (!fullName.trim()) {
+        setError('El nombre completo es requerido.');
+        setLoading(false);
+        return;
+      }
+      if (!password || password.length < 6) {
+        setError('La contrasena debe tener al menos 6 caracteres.');
+        setLoading(false);
+        return;
+      }
 
-    const { role } = await userService.getCurrentUser();
-    if (role === 'admin') {
-      router.replace('/admin');
-    } else {
-      router.replace('/(drawer)');
+      const { error: signUpError } = await supabase.auth.signUp({ email, password });
+      if (signUpError) {
+        setError(signUpError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (user?.id) {
+        const now = new Date().toISOString();
+        await supabase
+          .from('users')
+          .upsert({
+            id: user.id,
+            email: user.email,
+            full_name: fullName.trim(),
+            total_xp: 0,
+            current_level: 1,
+            streak_days: 0,
+            role: 'student',
+            last_activity_date: now
+          })
+          .eq('id', user.id);
+      }
+
+      const { role } = await userService.getCurrentUser();
+      if (role === 'admin') {
+        router.replace('/admin');
+      } else {
+        router.replace('/(drawer)');
+      }
+    } catch (err) {
+      setError(err.message || 'No se pudo registrar.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -41,6 +77,14 @@ export default function RegisterScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>Crear cuenta</Text>
         <Text style={styles.subtitle}>Registrate para comenzar tu aventura</Text>
+
+        <Text style={styles.label}>Nombre completo</Text>
+        <TextInput
+          style={styles.input}
+          value={fullName}
+          onChangeText={setFullName}
+          placeholder="Tu nombre completo"
+        />
 
         <Text style={styles.label}>Correo</Text>
         <TextInput
@@ -68,7 +112,7 @@ export default function RegisterScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.replace('/(auth)/login')} style={styles.linkButton}>
-          <Text style={styles.linkText}>¿Ya tienes cuenta? Inicia sesion</Text>
+          <Text style={styles.linkText}>Ya tienes cuenta? Inicia sesion</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -150,7 +150,7 @@ export default function AdminContentScreen() {
     const qCount = questionsByLesson[lesson.id]?.length || 0;
     Alert.alert(
       'Eliminar leccion',
-      `Esta leccion tiene ${qCount} preguntas. ¿Deseas eliminarla?`,
+      `Esta leccion tiene ${qCount} preguntas. Deseas eliminarla?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
