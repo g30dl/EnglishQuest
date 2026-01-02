@@ -146,13 +146,13 @@ export default function HomeScreen() {
 
           <View style={styles.miniRow}>
             <Pressable
-              style={({ pressed }) => [
-                styles.miniCard,
-                { borderColor: theme.colors.area.gramatica },
-                pressed && styles.cardPressed
-              ]}
-              onPress={() => router.push('/(drawer)/(tabs)/gramatica')}
-            >
+            style={({ pressed }) => [
+              styles.miniCard,
+              { borderColor: theme.colors.area.gramatica },
+              pressed && styles.cardPressed
+            ]}
+            onPress={() => router.push('/(drawer)/(tabs)/gramatica')}
+          >
               <View style={styles.miniHeader}>
                 <View style={styles.miniInfo}>
                   <Text style={styles.miniTitle}>Gramatica</Text>
@@ -177,13 +177,13 @@ export default function HomeScreen() {
               </View>
             </Pressable>
             <Pressable
-              style={({ pressed }) => [
-                styles.miniCard,
-                { borderColor: theme.colors.area.listening },
-                pressed && styles.cardPressed
-              ]}
-              onPress={() => router.push('/(drawer)/(tabs)/listening')}
-            >
+            style={({ pressed }) => [
+              styles.miniCard,
+              { borderColor: theme.colors.area.listening },
+              pressed && styles.cardPressed
+            ]}
+            onPress={() => router.push('/(drawer)/(tabs)/listening')}
+          >
               <View style={styles.miniHeader}>
                 <View style={styles.miniInfo}>
                   <Text style={styles.miniTitle}>Listening</Text>

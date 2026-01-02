@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, TextInput, ActivityIndicator, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, ActivityIndicator, Animated, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useProgress } from '../../../../context/ProgressContext';
 import * as Speech from 'expo-speech';
@@ -7,6 +7,17 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { theme } from '../../../../lib/theme';
 
 const colors = theme.colors;
+const t = theme.typography;
+
+const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const secs = Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, '0');
+  return `${mins}:${secs}`;
+};
 
 export default function LessonRunnerScreen() {
   const { areaId, lessonId } = useLocalSearchParams();
@@ -32,6 +43,7 @@ export default function LessonRunnerScreen() {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const bgAnim = useRef(new Animated.Value(0)).current;
+  const startTimeRef = useRef(Date.now());
 
   const total = lessonQuestions.length;
   const currentQuestion = lessonQuestions[index];
@@ -47,6 +59,10 @@ export default function LessonRunnerScreen() {
       navigation.setOptions({ title: 'Leccion' });
     }
   }, [lesson?.title, navigation]);
+
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+  }, [lessonId]);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -159,26 +175,6 @@ export default function LessonRunnerScreen() {
   const incorrectCount = total - correctCount;
   const lessonXp = lesson?.xp_reward || 50;
 
-  const circleSize = 140;
-  const halfCircle = circleSize / 2;
-  const resultProgressAnim = useRef(new Animated.Value(0)).current;
-  const leftSpin = resultProgressAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: ['0deg', '0deg', '180deg']
-  });
-  const rightSpin = resultProgressAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: ['0deg', '180deg', '180deg']
-  });
-
-  useEffect(() => {
-    Animated.timing(resultProgressAnim, {
-      toValue: Math.min(scorePercent, 100) / 100,
-      duration: 800,
-      useNativeDriver: false
-    }).start();
-  }, [scorePercent, resultProgressAnim]);
-
   if (loading) {
     return (
       <View style={styles.container}>
@@ -213,90 +209,101 @@ export default function LessonRunnerScreen() {
   if (finished) {
     const outcome =
       scorePercent >= 90
-        ? 'Excelente'
+        ? 'Excelente!'
         : scorePercent >= 70
           ? 'Muy bien'
           : scorePercent >= 60
-            ? 'Aprobado'
+            ? 'Aprobado!'
             : 'Intenta de nuevo';
+    const motivacion =
+      scorePercent >= 90
+        ? 'Fantastico trabajo, sigue asi.'
+        : scorePercent >= 70
+          ? 'Vas genial, continua.'
+          : scorePercent >= 60
+            ? 'Buen trabajo, sigue subiendo.'
+            : 'Vuelve a intentarlo para mejorar.';
+    const xpEarned = passed ? (lesson?.xp_reward ?? lesson?.xp ?? 0) : 0;
+    const durationSeconds = Math.max(Math.round((Date.now() - startTimeRef.current) / 1000), 1);
+    const correctTotal = correctCount;
+
     return (
       <View style={styles.container}>
-        <View style={styles.resultCard}>
-          <View style={styles.circleContainer}>
-            <View style={[styles.progressOuter, { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }]}>
-              <View style={[styles.halfCircle, styles.leftWrap]}>
-                <Animated.View
-                  style={[
-                    styles.halfCircleFill,
-                    {
-                      borderTopLeftRadius: halfCircle,
-                      borderBottomLeftRadius: halfCircle,
-                      transform: [{ rotate: leftSpin }]
-                    }
-                  ]}
-                />
-              </View>
-              <View style={[styles.halfCircle, styles.rightWrap]}>
-                <Animated.View
-                  style={[
-                    styles.halfCircleFill,
-                    {
-                      borderTopRightRadius: halfCircle,
-                      borderBottomRightRadius: halfCircle,
-                      transform: [{ rotate: rightSpin }]
-                    }
-                  ]}
-                />
-              </View>
-              <View style={styles.progressInner}>
-                <Text style={[styles.score, { color: passed ? colors.accent : '#d32f2f' }]}>{scorePercent}%</Text>
-              </View>
+        <View style={[styles.resultCard, { borderColor: passed ? colors.accent : colors.error }]}>
+          <View style={styles.progressBlock}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.percentTitle}>{outcome}</Text>
+              <Text style={[styles.percentValue, { color: passed ? colors.accent : colors.error }]}>{scorePercent}%</Text>
+            </View>
+            <View style={styles.progressTrackBig}>
+              <View
+                style={[
+                  styles.progressFillBig,
+                  {
+                    width: `${Math.min(scorePercent, 100)}%`,
+                    backgroundColor: passed ? colors.accent : colors.error
+                  }
+                ]}
+              />
+            </View>
+            <Text style={styles.percentSub}>{motivacion}</Text>
+          </View>
+
+          <View style={styles.performanceGrid}>
+            <View style={styles.statCard}>
+              <Ionicons name="flash-outline" size={20} color={passed ? colors.accent : colors.error} />
+              <Text style={styles.statTitle}>XP ganado</Text>
+              <Text style={styles.statValue}>+{xpEarned}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="time-outline" size={20} color={colors.primary} />
+              <Text style={styles.statTitle}>Tiempo</Text>
+              <Text style={styles.statValue}>{formatTime(durationSeconds)}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} />
+              <Text style={styles.statTitle}>Aciertos</Text>
+              <Text style={styles.statValue}>
+                {correctTotal}/{total}
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="flame-outline" size={20} color={colors.primary} />
+              <Text style={styles.statTitle}>Racha</Text>
+              <Text style={styles.statValue}>5 dias</Text>
             </View>
           </View>
 
-          <Text style={[styles.outcome, passed ? styles.outcomeSuccess : styles.outcomeFail]}>{outcome}</Text>
+          {passed && (
+            <View style={styles.xpBadge}>
+              <Ionicons name="flash" size={18} color="#fff" />
+              <Text style={styles.xpBadgeText}>+{xpEarned} XP</Text>
+            </View>
+          )}
 
-          <View style={styles.breakdownRow}>
-            <View style={styles.breakdownItem}>
-              <Ionicons name="checkmark-circle" size={22} color={colors.accent} />
-              <Text style={styles.breakdownText}>{correctCount} correctas</Text>
-            </View>
-            <View style={styles.breakdownItem}>
-              <Ionicons name="close-circle" size={22} color="#d32f2f" />
-              <Text style={styles.breakdownText}>{incorrectCount} incorrectas</Text>
-            </View>
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.primaryButton, passed ? styles.primarySuccess : styles.primaryError]}
+              onPress={() => router.replace('/(drawer)/(tabs)')}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.primaryText}>Continuar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => {
+                setFinished(false);
+                setIndex(0);
+                setCorrectCount(0);
+                completedRef.current = false;
+                resetSelection();
+                startTimeRef.current = Date.now();
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.secondaryText}>Repetir leccion</Text>
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.xpBadge}>
-            <Ionicons name="flash-outline" size={20} color="#fff" />
-            <Text style={styles.xpText}>+{passed ? lessonXp : 0} XP</Text>
-          </View>
-
-          {scorePercent > 80 ? (
-            <View style={styles.celebration}>
-              <Ionicons name="star" size={20} color={colors.accent} />
-              <Ionicons name="star-outline" size={20} color={colors.accent} />
-              <Ionicons name="star" size={20} color={colors.accent} />
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.resultActions}>
-          <TouchableOpacity onPress={() => router.back()} style={[styles.button, styles.secondaryBtn]}>
-            <Text style={[styles.buttonText, styles.secondaryBtnText]}>Volver</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              setFinished(false);
-              setIndex(0);
-              setCorrectCount(0);
-              completedRef.current = false;
-              resetSelection();
-            }}
-            style={[styles.button, styles.primaryBtn]}
-          >
-            <Text style={styles.buttonText}>Repetir leccion</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -304,110 +311,116 @@ export default function LessonRunnerScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.progressTitle}>Pregunta {index + 1} de {total}</Text>
-      <View style={styles.progressTrack}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.progressTitle}>Pregunta {index + 1} de {total}</Text>
+        <View style={styles.progressTrack}>
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: ['0%', '100%']
+                }),
+                backgroundColor: progressAnim.interpolate({
+                  inputRange: [0, 33, 66, 100],
+                  outputRange: [colors.info, colors.info, colors.success, colors.gold]
+                }),
+                transform: [{ scaleY: pulseAnim }]
+              }
+            ]}
+          />
+        </View>
+        <Text style={styles.meta}>Progreso {percent}%</Text>
+
         <Animated.View
           style={[
-            styles.progressFill,
+            styles.card,
+            feedback.status === 'correct' && { backgroundColor: colors.background, borderColor: colors.success, borderWidth: 1 },
+            feedback.status === 'wrong' && { backgroundColor: colors.background, borderColor: colors.error, borderWidth: 1 },
             {
-              width: progressAnim.interpolate({
-                inputRange: [0, 100],
-                outputRange: ['0%', '100%']
-              }),
-              backgroundColor: progressAnim.interpolate({
-                inputRange: [0, 33, 66, 100],
-                outputRange: [colors.info, colors.info, colors.success, colors.gold]
-              }),
-              transform: [{ scaleY: pulseAnim }]
+              transform: [
+                {
+                  translateX: feedback.status === 'wrong' ? shakeAnim.interpolate({
+                    inputRange: [-1, 1],
+                    outputRange: [-6, 6]
+                  }) : 0
+                }
+              ]
             }
           ]}
-        />
-      </View>
-      <Text style={styles.meta}>Progreso {percent}%</Text>
+        >
+          <Text style={styles.prompt}>{currentQuestion.prompt}</Text>
 
-      <Animated.View
-        style={[
-          styles.card,
-          feedback.status === 'correct' && { backgroundColor: colors.background, borderColor: colors.success, borderWidth: 1 },
-          feedback.status === 'wrong' && { backgroundColor: colors.background, borderColor: colors.error, borderWidth: 1 },
-          {
-            transform: [
-              {
-                translateX: feedback.status === 'wrong' ? shakeAnim.interpolate({
-                  inputRange: [-1, 1],
-                  outputRange: [-6, 6]
-                }) : 0
-              }
-            ]
-          }
-        ]}
-      >
-        <Text style={styles.prompt}>{currentQuestion.prompt}</Text>
-
-        {currentQuestion.type === 'listening' && (
-          <View style={styles.audioCard}>
-            <TouchableOpacity style={styles.playButton} onPress={handleSpeak}>
-              <Ionicons
-                name={speaking ? 'pause' : 'play'}
-                size={28}
-                color="#fff"
-              />
-            </TouchableOpacity>
-            <View style={styles.waveRow}>
-              {Array.from({ length: 16 }).map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.waveBar,
-                    { height: 6 + ((i % 4) + 1) * 4, opacity: speaking ? 1 : 0.6 }
-                  ]}
+          {currentQuestion.type === 'listening' && (
+            <View style={styles.audioCard}>
+              <TouchableOpacity style={styles.playButton} onPress={handleSpeak}>
+                <Ionicons
+                  name={speaking ? 'pause' : 'play'}
+                  size={28}
+                  color="#fff"
                 />
-              ))}
-            </View>
-            <Text style={styles.audioTimer}>{speaking ? 'Reproduciendo...' : '00:00'}</Text>
-          </View>
-        )}
-
-        {currentQuestion.type === 'writing' ? (
-          <TextInput
-            style={styles.input}
-            placeholder="Escribe tu respuesta"
-            value={writtenAnswer}
-            onChangeText={setWrittenAnswer}
-          />
-        ) : (
-          currentQuestion.options?.map((opt, optIndex) => {
-            const active = selectedOption === optIndex;
-            return (
-              <TouchableOpacity
-                key={optIndex}
-                style={[styles.option, active && styles.optionSelected]}
-                onPress={() => setSelectedOption(optIndex)}
-              >
-                <View style={[styles.radio, active && styles.radioActive]}>
-                  {active ? <View style={styles.radioDot} /> : null}
-                </View>
-                <Text style={[styles.optionText, active && { color: colors.primary }]}>{opt}</Text>
               </TouchableOpacity>
-            );
-          })
-        )}
-        {feedback.status === 'correct' && (
-          <Animated.View style={[styles.feedbackRow, { transform: [{ scale: scaleAnim }] }]}>
-            <Ionicons name="checkmark-circle-outline" size={34} color={colors.accent} />
-            <Text style={[styles.feedbackText, { color: colors.accent }]}>{feedback.message}</Text>
-          </Animated.View>
-        )}
-        {feedback.status === 'wrong' && (
-          <View style={styles.feedbackRow}>
-            <Ionicons name="close-circle-outline" size={34} color={colors.error} />
-            <Text style={[styles.feedbackText, { color: colors.error }]}>{feedback.message}</Text>
-          </View>
-        )}
-        {feedback.status === 'wrong' && feedback.correctAnswer ? (
-          <Text style={styles.correctAnswer}>Respuesta correcta: {feedback.correctAnswer}</Text>
-        ) : null}
-      </Animated.View>
+              <View style={styles.waveRow}>
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.waveBar,
+                      { height: 6 + ((i % 4) + 1) * 4, opacity: speaking ? 1 : 0.6 }
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.audioTimer}>{speaking ? 'Reproduciendo...' : '00:00'}</Text>
+            </View>
+          )}
+
+          {currentQuestion.type === 'writing' ? (
+            <TextInput
+              style={styles.input}
+              placeholder="Escribe tu respuesta"
+              value={writtenAnswer}
+              onChangeText={setWrittenAnswer}
+            />
+          ) : (
+            currentQuestion.options?.map((opt, optIndex) => {
+              const active = selectedOption === optIndex;
+              return (
+                <TouchableOpacity
+                  key={optIndex}
+                  style={[styles.option, active && styles.optionSelected]}
+                  onPress={() => setSelectedOption(optIndex)}
+                >
+                  <View style={[styles.radio, active && styles.radioActive]}>
+                    {active ? <View style={styles.radioDot} /> : null}
+                  </View>
+                  <Text style={[styles.optionText, active && { color: colors.primary }]}>{opt}</Text>
+                </TouchableOpacity>
+              );
+            })
+          )}
+          {feedback.status === 'correct' && (
+            <Animated.View style={[styles.feedbackRow, { transform: [{ scale: scaleAnim }] }]}>
+              <Ionicons name="checkmark-circle-outline" size={34} color={colors.accent} />
+              <Text style={[styles.feedbackText, { color: colors.accent }]}>{feedback.message}</Text>
+            </Animated.View>
+          )}
+          {feedback.status === 'wrong' && (
+            <View style={styles.feedbackRow}>
+              <Ionicons name="close-circle-outline" size={34} color={colors.error} />
+              <Text style={[styles.feedbackText, { color: colors.error }]}>{feedback.message}</Text>
+            </View>
+          )}
+          {feedback.status === 'wrong' && feedback.correctAnswer ? (
+            <Text style={styles.correctAnswer}>Respuesta correcta: {feedback.correctAnswer}</Text>
+          ) : null}
+        </Animated.View>
+      </ScrollView>
 
       <TouchableOpacity style={styles.button} onPress={handleAnswer} disabled={submitting}>
         <Text style={styles.buttonText}>
@@ -423,6 +436,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     padding: 16,
+    gap: 12
+  },
+  scroll: {
+    flex: 1
+  },
+  scrollContent: {
+    paddingBottom: 16,
     gap: 12
   },
   heading: {
@@ -610,102 +630,144 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textPrimary
   },
-  resultCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-    alignItems: 'center'
-  },
-  circleContainer: {
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  progressOuter: {
-    borderWidth: 8,
-    borderColor: colors.border,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  halfCircle: {
-    position: 'absolute',
-    width: '50%',
-    height: '100%',
-    overflow: 'hidden'
-  },
-  leftWrap: {
-    left: 0
-  },
-  rightWrap: {
-    right: 0
-  },
-  halfCircleFill: {
-    position: 'absolute',
-    width: '200%',
-    height: '100%',
-    borderWidth: 8,
-    borderColor: colors.accent,
-    borderRadius: 1000
-  },
-  progressInner: {
-    position: 'absolute',
-    width: '80%',
-    height: '80%',
-    backgroundColor: colors.surface,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  outcome: {
-    fontSize: 20,
-    fontWeight: '800'
-  },
-  outcomeSuccess: {
-    color: colors.accent
-  },
-  outcomeFail: {
-    color: colors.error
-  },
-  breakdownRow: {
-    flexDirection: 'row',
-    gap: 16
-  },
-  breakdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6
-  },
-  breakdownText: {
-    fontWeight: '700',
-    color: colors.textPrimary
-  },
-  xpBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.success,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16
-  },
   xpText: {
     color: '#fff',
     fontWeight: '900',
     fontSize: 16
   },
-  celebration: {
-    flexDirection: 'row',
-    gap: 4,
+  progressBlock: {
+    width: '100%',
+    gap: 8,
     alignItems: 'center'
   },
-  resultActions: {
-    marginTop: 14,
+  progressHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    alignItems: 'center'
+  },
+  percentTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.textPrimary
+  },
+  percentValue: {
+    fontSize: 22,
+    fontWeight: '900'
+  },
+  percentSub: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    width: '100%'
+  },
+  progressTrackBig: {
+    height: 16,
+    width: '100%',
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    overflow: 'hidden'
+  },
+  progressFillBig: {
+    height: 16,
+    borderRadius: 12
+  },
+  performanceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    width: '100%'
+  },
+  statCard: {
+    flexBasis: '48%',
+    maxWidth: '48%',
+    marginBottom: 12,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1
+  },
+  statTitle: {
+    ...t.caption,
+    color: colors.textSecondary
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.textPrimary
+  },
+  actions: {
+    width: '100%',
     gap: 10
+  },
+  primaryButton: {
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center'
+  },
+  primarySuccess: {
+    backgroundColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3
+  },
+  primaryError: {
+    backgroundColor: colors.error
+  },
+  primaryText: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 16
+  },
+  secondaryButton: {
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    borderWidth: 1.2,
+    borderColor: colors.border,
+    backgroundColor: colors.surface
+  },
+  secondaryText: {
+    color: colors.primary,
+    fontWeight: '800',
+    fontSize: 15
+  },
+  resultCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+    alignItems: 'center',
+    width: '100%',
+    borderWidth: 1.4
+  },
+  xpBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.accent,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3
   }
 });

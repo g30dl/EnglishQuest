@@ -52,21 +52,6 @@ function CustomDrawerContent(props) {
         icon={({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />}
       />
       <DrawerItem
-        label="Vocabulario"
-        onPress={() => goTo('/(drawer)/(tabs)/vocabulario')}
-        icon={({ color, size }) => <Ionicons name="book-outline" size={size} color={color} />}
-      />
-      <DrawerItem
-        label="Gramatica"
-        onPress={() => goTo('/(drawer)/(tabs)/gramatica')}
-        icon={({ color, size }) => <Ionicons name="create-outline" size={size} color={color} />}
-      />
-      <DrawerItem
-        label="Listening"
-        onPress={() => goTo('/(drawer)/(tabs)/listening')}
-        icon={({ color, size }) => <Ionicons name="headset-outline" size={size} color={color} />}
-      />
-      <DrawerItem
         label="Perfil"
         onPress={() => goTo('/(drawer)/perfil')}
         icon={({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />}

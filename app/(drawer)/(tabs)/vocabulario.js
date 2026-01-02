@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Pressable } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../../context/ProgressContext';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -37,11 +37,12 @@ export default function VocabularioScreen() {
         </View>
       )}
 
-      <FlatList
-        data={groupedByLevel}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.levelCard, !item.unlocked && styles.levelCardLocked]}>
+      <ScrollView
+        contentContainerStyle={{ gap: 12, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {groupedByLevel.map((item) => (
+          <View key={item.id} style={[styles.levelCard, !item.unlocked && styles.levelCardLocked]}>
             <View style={styles.levelHeader}>
               <Text style={[styles.levelTitle, !item.unlocked && styles.lockedText]}>{item.name}</Text>
               {!item.unlocked && (
@@ -104,9 +105,8 @@ export default function VocabularioScreen() {
               ))
             )}
           </View>
-        )}
-        contentContainerStyle={{ gap: 12, paddingBottom: 24 }}
-      />
+        ))}
+      </ScrollView>
     </View>
   );
 }
