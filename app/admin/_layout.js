@@ -22,41 +22,17 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
-          tabBarLabel: 'Dashboard',
+          title: 'Dashboard',
+          tabBarLabel: 'Inicio',
           tabBarIcon: ({ color, size }) => <Ionicons name="speedometer-outline" size={size} color={color} />
         }}
       />
       <Tabs.Screen
         name="levels"
         options={{
-          title: 'Niveles',
-          tabBarLabel: 'Niveles',
+          title: 'Contenido',
+          tabBarLabel: 'Contenido',
           tabBarIcon: ({ color, size }) => <Ionicons name="layers-outline" size={size} color={color} />
-        }}
-      />
-      <Tabs.Screen
-        name="lessons"
-        options={{
-          title: 'Lecciones',
-          tabBarLabel: 'Lecciones',
-          tabBarIcon: ({ color, size }) => <Ionicons name="book-outline" size={size} color={color} />
-        }}
-      />
-      <Tabs.Screen
-        name="questions"
-        options={{
-          title: 'Preguntas',
-          tabBarLabel: 'Preguntas',
-          tabBarIcon: ({ color, size }) => <Ionicons name="help-circle-outline" size={size} color={color} />
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Perfil',
-          tabBarLabel: 'Perfil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />
         }}
       />
     </Tabs>

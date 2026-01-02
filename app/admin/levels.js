@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { supabase } from '../../lib/supabaseClient';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useProgress } from '../../context/ProgressContext';
+import { AREAS, AREA_COLORS } from '../../lib/constants';
 
 const colors = {
   primary: '#1B5E20',
@@ -9,181 +10,353 @@ const colors = {
   background: '#E8F5E9'
 };
 
-const allowedAreas = ['vocabulario', 'gramatica', 'listening'];
-const levelOptions = Array.from({ length: 10 }, (_, i) => i + 1);
-const defaultArea = 'vocab';
+const typeIcons = {
+  reading: 'book-outline',
+  writing: 'create-outline',
+  listening: 'headset-outline'
+};
 
-export default function AdminLevelsScreen() {
-  const { levels: ctxLevels, addLevel, reload, loading: ctxLoading } = useProgress();
-  const [levels, setLevels] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [name, setName] = useState('');
-  const [areaId, setAreaId] = useState(defaultArea);
-  const [order, setOrder] = useState('');
+export default function AdminContentScreen() {
+  const { areas, levels, lessons, questions, addLevel, addLesson, addQuestion, deleteLesson, reload } = useProgress();
+
+  const [expandedAreas, setExpandedAreas] = useState({});
+  const [expandedLevels, setExpandedLevels] = useState({});
+  const [form, setForm] = useState({
+    areaId: 'vocabulario',
+    levelOrder: 1,
+    lessonTitle: '',
+    lessonType: 'reading',
+    questionPrompt: '',
+    questionType: 'reading',
+    options: '',
+    answerIndex: '',
+    answerText: ''
+  });
   const [message, setMessage] = useState('');
-  const [editing, setEditing] = useState(null);
 
-  useEffect(() => {
-    setLevels(ctxLevels);
-  }, [ctxLevels]);
+  const toggleArea = (id) => {
+    setExpandedAreas((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
-  const handleCreate = async () => {
-    if (!areaId) {
-      setMessage('Completa el area.');
+  const toggleLevel = (id) => {
+    setExpandedLevels((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const grouped = useMemo(() => {
+    const areaMap = {};
+    AREAS.forEach((a) => {
+      areaMap[a] = { areaId: a, levels: [] };
+    });
+    levels.forEach((lvl) => {
+      if (!areaMap[lvl.areaId]) areaMap[lvl.areaId] = { areaId: lvl.areaId, levels: [] };
+      areaMap[lvl.areaId].levels.push(lvl);
+    });
+    Object.values(areaMap).forEach((entry) => {
+      entry.levels.sort((a, b) => (a.order || 0) - (b.order || 0));
+    });
+    return Object.values(areaMap);
+  }, [levels]);
+
+  const lessonsByAreaLevel = useMemo(() => {
+    const map = {};
+    lessons.forEach((ls) => {
+      const key = `${ls.areaId}-${ls.level}`;
+      map[key] = map[key] || [];
+      map[key].push(ls);
+    });
+    Object.values(map).forEach((arr) => arr.sort((a, b) => (a.order || 0) - (b.order || 0)));
+    return map;
+  }, [lessons]);
+
+  const questionsByLesson = useMemo(() => {
+    const map = {};
+    questions.forEach((q) => {
+      map[q.lessonId] = map[q.lessonId] || [];
+      map[q.lessonId].push(q);
+    });
+    return map;
+  }, [questions]);
+
+  const handleAddLevel = async (areaId) => {
+    const nextOrder = (levels.filter((l) => l.areaId === areaId).length || 0) + 1;
+    const result = await addLevel({ areaId, order: nextOrder, name: `Nivel ${nextOrder}` });
+    if (result?.success) {
+      setMessage(`Nivel creado en ${areaId}`);
+      reload?.();
+    } else {
+      setMessage(result?.error || 'No se pudo crear el nivel');
+    }
+  };
+
+  const handleAddLesson = async (areaId, order) => {
+    if (!form.lessonTitle.trim()) {
+      setMessage('Escribe un titulo para la leccion');
       return;
     }
-    if (!allowedAreas.includes(areaId)) {
-      setMessage('Area invalida. Usa vocab / grammar / listening.');
-      return;
-    }
-    const orderNumber = Number(order) || 1;
-    const result = await addLevel({
-      name: name || `Nivel ${orderNumber}`,
-      areaId,
-      order: orderNumber
+    const result = await addLesson({
+      title: form.lessonTitle.trim(),
+      area: areaId,
+      level: order,
+      type: form.lessonType,
+      xp_reward: 50,
+      order: (lessonsByAreaLevel[`${areaId}-${order}`]?.length || 0) + 1
     });
     if (result?.success) {
-      setMessage('Nivel creado en Supabase');
-      setName('');
-      setOrder('');
+      setMessage('Leccion creada');
+      setForm((prev) => ({ ...prev, lessonTitle: '' }));
       reload?.();
     } else {
-      setMessage(`No se pudo crear el nivel: ${result?.error || 'Error desconocido'}`);
+      setMessage(result?.error || 'No se pudo crear la leccion');
     }
   };
 
-  const startEdit = (item) => {
-    setEditing(item);
-    setAreaId(item.area);
-    setOrder(String(item.level));
-    setName(item.name || `Nivel ${item.level}`);
-  };
-
-  const handleUpdate = async () => {
-    if (!editing) return;
-    if (!allowedAreas.includes(areaId)) {
-      setMessage('Area invalida. Usa vocab / grammar / listening.');
+  const handleAddQuestion = async (lessonId) => {
+    if (!form.questionPrompt.trim()) {
+      setMessage('Escribe un prompt para la pregunta');
       return;
     }
-    const newLevel = Number(order) || editing.level;
-    const result = await addLevel({
-      name: name || `Nivel ${newLevel}`,
-      areaId,
-      order: newLevel
+    const isWriting = form.questionType === 'writing';
+    const opts = isWriting
+      ? null
+      : form.options
+          .split(',')
+          .map((o) => o.trim())
+          .filter(Boolean);
+    const result = await addQuestion({
+      lessonId,
+      type: form.questionType,
+      prompt: form.questionPrompt.trim(),
+      options: opts,
+      answerText: isWriting ? form.answerText.trim() : undefined,
+      answerIndex: isWriting ? null : Number(form.answerIndex),
+      audioText: form.questionType === 'listening' ? form.questionPrompt.trim() : undefined
     });
-    if (!result?.success) {
-      setMessage(`No se pudo editar el nivel: ${result?.error || 'Error desconocido'}`);
-    } else {
-      setMessage('Nivel actualizado');
-      setEditing(null);
-      setAreaId(defaultArea);
-      setOrder('');
-      setName('');
+    if (result?.success) {
+      setMessage('Pregunta creada');
+      setForm((prev) => ({
+        ...prev,
+        questionPrompt: '',
+        options: '',
+        answerIndex: '',
+        answerText: ''
+      }));
       reload?.();
+    } else {
+      setMessage(result?.error || 'No se pudo crear la pregunta');
     }
   };
 
-  const handleDelete = async (item) => {
-    if (item.lessons?.length) {
-      setMessage('No se puede eliminar: hay lecciones asociadas.');
-      return;
-    }
-    Alert.alert('Eliminar nivel', 'Esto eliminara el nivel si no tiene lecciones. ¿Continuar?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase
-            .from('lessons')
-            .delete()
-            .eq('area', item.area)
-            .eq('level', item.level);
-          if (error) {
-            setMessage('No se pudo eliminar el nivel');
-          } else {
-            setMessage('Nivel eliminado');
-            reload?.();
+  const handleDeleteLesson = (lesson) => {
+    const qCount = questionsByLesson[lesson.id]?.length || 0;
+    Alert.alert(
+      'Eliminar leccion',
+      `Esta leccion tiene ${qCount} preguntas. ¿Deseas eliminarla?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await deleteLesson(lesson.id);
+            if (!result?.success) {
+              setMessage(result?.error || 'No se pudo eliminar la leccion');
+            } else {
+              setMessage('Leccion eliminada');
+              reload?.();
+            }
           }
         }
-      }
-    ]);
+      ]
+    );
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.heading}>Gestionar niveles</Text>
-      <Text style={styles.sub}>Los niveles se agrupan por numero en la tabla de lecciones.</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+      <Text style={styles.heading}>Contenido (Areas / Niveles / Lecciones / Preguntas)</Text>
+      {message ? <Text style={styles.message}>{message}</Text> : null}
 
-      <View style={styles.form}>
-        <Text style={styles.label}>Nombre</Text>
-        <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="Nivel 1" />
-
-        <Text style={styles.label}>Area</Text>
-        <View style={styles.chipsRow}>
-          {allowedAreas.map((opt) => (
-            <TouchableOpacity
-              key={opt}
-              style={[styles.chip, areaId === opt && styles.chipActive]}
-              onPress={() => setAreaId(opt)}
-            >
-              <Text style={[styles.chipText, areaId === opt && styles.chipTextActive]}>{opt}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.label}>Nivel</Text>
-        <View style={styles.chipsRow}>
-          {levelOptions.map((opt) => (
-            <TouchableOpacity
-              key={opt}
-              style={[styles.chip, Number(order) === opt && styles.chipActive]}
-              onPress={() => setOrder(String(opt))}
-            >
-              <Text style={[styles.chipText, Number(order) === opt && styles.chipTextActive]}>{opt}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {message ? <Text style={styles.message}>{message}</Text> : null}
-
-        {editing ? (
-          <TouchableOpacity style={styles.button} onPress={handleUpdate}>
-            <Text style={styles.buttonText}>Actualizar nivel</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.button} onPress={handleCreate}>
-            <Text style={styles.buttonText}>Crear nivel</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <Text style={styles.sub}>Niveles existentes</Text>
-      {loading || ctxLoading ? (
-        <ActivityIndicator color={colors.primary} size="large" />
-      ) : (
-        <FlatList
-          data={[...levels].sort((a, b) => (a.level || 0) - (b.level || 0))}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Nivel {item.level}</Text>
-              <Text style={styles.cardMeta}>Area: {item.area || '-'}</Text>
-              <Text style={styles.cardMeta}>Lecciones: {item.lessons?.length || 0}</Text>
-              <View style={styles.row}>
-                <TouchableOpacity style={styles.secondary} onPress={() => startEdit(item)}>
-                  <Text style={styles.secondaryText}>Editar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.delete} onPress={() => handleDelete(item)}>
-                  <Text style={styles.deleteText}>Eliminar</Text>
-                </TouchableOpacity>
+      {AREAS.map((areaId) => {
+        const areaLevels = levels.filter((l) => l.areaId === areaId).sort((a, b) => (a.order || 0) - (b.order || 0));
+        return (
+          <View key={areaId} style={styles.areaCard}>
+            <TouchableOpacity style={styles.areaHeader} onPress={() => toggleArea(areaId)}>
+              <View style={styles.areaTitleRow}>
+                <View style={[styles.areaDot, { backgroundColor: AREA_COLORS[areaId] || colors.primary }]} />
+                <Text style={styles.areaTitle}>{areaId}</Text>
               </View>
-            </View>
-          )}
-          contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
-          scrollEnabled={false}
-        />
-      )}
+              <Ionicons
+                name={expandedAreas[areaId] ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+
+            {expandedAreas[areaId] && (
+              <View style={styles.areaBody}>
+                <TouchableOpacity style={styles.addButton} onPress={() => handleAddLevel(areaId)}>
+                  <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+                  <Text style={styles.addText}>Agregar nivel</Text>
+                </TouchableOpacity>
+
+                {areaLevels.length === 0 ? (
+                  <Text style={styles.empty}>No hay niveles en esta area.</Text>
+                ) : (
+                  areaLevels.map((lvl) => {
+                    const lvlLessons = lessonsByAreaLevel[`${areaId}-${lvl.order}`] || [];
+                    return (
+                      <View key={lvl.id} style={styles.levelCard}>
+                        <TouchableOpacity style={styles.levelHeader} onPress={() => toggleLevel(lvl.id)}>
+                          <Text style={styles.levelTitle}>
+                            {lvl.name} (orden {lvl.order})
+                          </Text>
+                          <View style={styles.badges}>
+                            <View style={styles.badge}>
+                              <Text style={styles.badgeText}>{lvlLessons.length} lecciones</Text>
+                            </View>
+                          </View>
+                          <Ionicons
+                            name={expandedLevels[lvl.id] ? 'chevron-up' : 'chevron-down'}
+                            size={16}
+                            color="#555"
+                          />
+                        </TouchableOpacity>
+
+                        {expandedLevels[lvl.id] && (
+                          <View style={styles.levelBody}>
+                            <TouchableOpacity style={styles.addButton} onPress={() => handleAddLesson(areaId, lvl.order)}>
+                              <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+                              <Text style={styles.addText}>Agregar leccion</Text>
+                            </TouchableOpacity>
+
+                            {lvlLessons.length === 0 ? (
+                              <Text style={styles.empty}>No hay lecciones en este nivel.</Text>
+                            ) : (
+                              lvlLessons.map((lesson) => (
+                                <View key={lesson.id} style={styles.lessonRow}>
+                                  <View style={styles.lessonTitleBox}>
+                                    <Ionicons
+                                      name={typeIcons[lesson.type] || 'book-outline'}
+                                      size={16}
+                                      color={colors.primary}
+                                    />
+                                    <Text style={styles.lessonTitleText}>{lesson.title}</Text>
+                                  </View>
+                                  <View style={styles.badges}>
+                                    <View style={styles.badge}>
+                                      <Text style={styles.badgeText}>
+                                        {(questionsByLesson[lesson.id]?.length || 0)} preguntas
+                                      </Text>
+                                    </View>
+                                    <TouchableOpacity onPress={() => handleDeleteLesson(lesson)}>
+                                      <Ionicons name="trash-outline" size={18} color="#d32f2f" />
+                                    </TouchableOpacity>
+                                  </View>
+
+                                  <View style={styles.questionForm}>
+                                    <Text style={styles.label}>Nueva pregunta para {lesson.title}</Text>
+                                    <TextInput
+                                      style={styles.input}
+                                      placeholder="Prompt"
+                                      value={form.questionPrompt}
+                                      onChangeText={(t) => setForm((prev) => ({ ...prev, questionPrompt: t }))}
+                                    />
+                                    <View style={styles.chipsRow}>
+                                      {['reading', 'writing', 'listening'].map((opt) => (
+                                        <TouchableOpacity
+                                          key={opt}
+                                          style={[
+                                            styles.chip,
+                                            form.questionType === opt && styles.chipActive
+                                          ]}
+                                          onPress={() => setForm((prev) => ({ ...prev, questionType: opt }))}
+                                        >
+                                          <Text
+                                            style={[
+                                              styles.chipText,
+                                              form.questionType === opt && styles.chipTextActive
+                                            ]}
+                                          >
+                                            {opt}
+                                          </Text>
+                                        </TouchableOpacity>
+                                      ))}
+                                    </View>
+                                    {form.questionType === 'writing' ? (
+                                      <TextInput
+                                        style={styles.input}
+                                        placeholder="Respuesta texto"
+                                        value={form.answerText}
+                                        onChangeText={(t) => setForm((prev) => ({ ...prev, answerText: t }))}
+                                      />
+                                    ) : (
+                                      <>
+                                        <TextInput
+                                          style={styles.input}
+                                          placeholder="Opciones separadas por coma"
+                                          value={form.options}
+                                          onChangeText={(t) => setForm((prev) => ({ ...prev, options: t }))}
+                                        />
+                                        <TextInput
+                                          style={styles.input}
+                                          placeholder="Indice de respuesta (0 basado)"
+                                          value={form.answerIndex}
+                                          onChangeText={(t) => setForm((prev) => ({ ...prev, answerIndex: t }))}
+                                          keyboardType="numeric"
+                                        />
+                                      </>
+                                    )}
+                                    <TouchableOpacity
+                                      style={styles.addButton}
+                                      onPress={() => handleAddQuestion(lesson.id)}
+                                    >
+                                      <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+                                      <Text style={styles.addText}>Agregar pregunta</Text>
+                                    </TouchableOpacity>
+                                  </View>
+                                </View>
+                              ))
+                            )}
+
+                            <View style={styles.lessonForm}>
+                              <Text style={styles.label}>Crear leccion en {areaId} > Nivel {lvl.order}</Text>
+                              <TextInput
+                                style={styles.input}
+                                placeholder="Titulo de la leccion"
+                                value={form.lessonTitle}
+                                onChangeText={(t) => setForm((prev) => ({ ...prev, lessonTitle: t }))}
+                              />
+                              <View style={styles.chipsRow}>
+                                {['reading', 'writing', 'listening'].map((opt) => (
+                                  <TouchableOpacity
+                                    key={opt}
+                                    style={[styles.chip, form.lessonType === opt && styles.chipActive]}
+                                    onPress={() => setForm((prev) => ({ ...prev, lessonType: opt }))}
+                                  >
+                                    <Text style={[styles.chipText, form.lessonType === opt && styles.chipTextActive]}>
+                                      {opt}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ))}
+                              </View>
+                              <TouchableOpacity
+                                style={styles.addButton}
+                                onPress={() => handleAddLesson(areaId, lvl.order)}
+                              >
+                                <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+                                <Text style={styles.addText}>Crear leccion</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            )}
+          </View>
+        );
+      })}
     </ScrollView>
   );
 }
@@ -194,101 +367,141 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     padding: 16
   },
-  scrollContent: {
-    paddingBottom: 24,
-    gap: 12
-  },
   heading: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
-    color: colors.primary
+    color: colors.primary,
+    marginBottom: 10
   },
-  sub: {
-    fontSize: 14,
-    color: '#555'
+  message: {
+    color: colors.primary,
+    fontWeight: '700',
+    marginBottom: 8
   },
-  form: {
+  areaCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
-    gap: 8,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1
   },
-  label: {
-    fontSize: 13,
-    color: '#555'
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d8e5d8',
-    borderRadius: 10,
-    padding: 10,
-    backgroundColor: '#fff'
-  },
-  button: {
-    backgroundColor: colors.accent,
-    paddingVertical: 12,
-    borderRadius: 10,
+  areaHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4
+    justifyContent: 'space-between'
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '700'
+  areaTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
   },
-  message: {
-    color: colors.primary,
-    fontWeight: '600'
+  areaDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-    gap: 6
-  },
-  cardTitle: {
+  areaTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: colors.primary
   },
-  cardMeta: {
-    fontSize: 13,
-    color: '#555'
-  },
-  row: {
-    flexDirection: 'row',
+  areaBody: {
+    marginTop: 8,
     gap: 8
   },
-  secondary: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#E8F5E9',
-    alignItems: 'center'
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8
   },
-  secondaryText: {
+  addText: {
+    color: colors.accent,
+    fontWeight: '700'
+  },
+  empty: {
+    color: '#555',
+    fontSize: 13
+  },
+  levelCard: {
+    backgroundColor: '#f9faf9',
+    borderRadius: 10,
+    padding: 10,
+    gap: 8
+  },
+  levelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  levelTitle: {
+    fontWeight: '800',
+    color: '#2e2e2e'
+  },
+  badges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+  badge: {
+    backgroundColor: '#e8f5e9',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4
+  },
+  badgeText: {
     color: colors.primary,
     fontWeight: '700'
   },
-  delete: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#FFE4E6',
-    alignItems: 'center'
+  levelBody: {
+    gap: 8
   },
-  deleteText: {
-    color: '#d32f2f',
-    fontWeight: '700'
+  lessonRow: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 10,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1
+  },
+  lessonTitleBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+  lessonTitleText: {
+    fontWeight: '800',
+    color: colors.primary
+  },
+  questionForm: {
+    backgroundColor: '#f6f7f6',
+    borderRadius: 10,
+    padding: 8,
+    gap: 6
+  },
+  lessonForm: {
+    backgroundColor: '#f6f7f6',
+    borderRadius: 10,
+    padding: 8,
+    gap: 6
+  },
+  label: {
+    fontWeight: '700',
+    color: '#444'
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d8e5d8',
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: '#fff'
   },
   chipsRow: {
     flexDirection: 'row',
@@ -296,8 +509,8 @@ const styles = StyleSheet.create({
     gap: 8
   },
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 10,
     backgroundColor: '#f1f5f1'
   },

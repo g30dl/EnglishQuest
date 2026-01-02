@@ -2,6 +2,7 @@ import React, { createContext, useContext, useMemo, useState, useCallback, useEf
 import { supabase } from '../lib/supabaseClient';
 import { userService } from '../lib/userService';
 import { crudService } from '../lib/crudService';
+import { AREAS } from '../lib/constants';
 
 const XP_PER_CORRECT = 10;
 const XP_PER_LESSON = 50;
@@ -15,7 +16,8 @@ const normalizeArea = (area) => {
   if (lower.startsWith('vocab')) return 'vocabulario';
   if (lower.startsWith('gram')) return 'gramatica';
   if (lower.startsWith('list')) return 'listening';
-  return lower;
+  const found = AREAS.find((a) => a === lower);
+  return found || 'vocabulario';
 };
 
 export function ProgressProvider({ children }) {
@@ -538,7 +540,7 @@ export function ProgressProvider({ children }) {
             question_text: payload.prompt,
             correct_answer: payload.answerText || payload.correct_answer || '',
             options: payload.options || null,
-            answer_index: payload.answerIndex || null,
+            // answer_index columna puede no existir; no la enviamos si no está en el esquema
             order_index: payload.order || questions.length,
             audio_text: payload.audioText || payload.prompt
           })
