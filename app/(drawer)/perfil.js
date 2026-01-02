@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../context/ProgressContext';
 import { supabase } from '../../lib/supabaseClient';
 import { userService } from '../../lib/userService';
+import { theme } from '../../lib/theme';
 
-const colors = {
-  primary: '#1B5E20',
-  accent: '#00C853',
-  background: '#E8F5E9'
-};
+const colors = theme.colors;
+const t = theme.typography;
+const s = theme.spacing;
 
 export default function PerfilDrawerScreen() {
   const router = useRouter();
@@ -74,18 +74,39 @@ export default function PerfilDrawerScreen() {
       ) : (
         <>
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>Nivel actual</Text>
+            <View style={styles.row}>
+              <Ionicons name="trophy" size={22} color={colors.accent} />
+              <Text style={styles.cardLabel}>Nivel actual</Text>
+            </View>
             <Text style={styles.cardValue}>{profile.current_level}</Text>
-            <Text style={styles.cardHint}>{profile.total_xp} XP acumulados</Text>
-            <Text style={styles.cardHint}>Racha: {profile.streak_days} dias</Text>
+            <View style={styles.row}>
+              <Ionicons name="star" size={20} color={colors.accent} />
+              <Text style={styles.cardHint}>{profile.total_xp} XP acumulados</Text>
+            </View>
+            <View style={styles.row}>
+              <Ionicons name="flame" size={20} color="#F57C00" />
+              <Text style={styles.cardHint}>Racha: {profile.streak_days} dias</Text>
+            </View>
+            <View style={styles.row}>
+              <Ionicons name="library" size={20} color={colors.primary} />
+              <Text style={styles.cardHint}>
+                Lecciones completadas: {completedLessons.length}/{lessons.length}
+              </Text>
+            </View>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>Progreso por area</Text>
+            <View style={styles.row}>
+              <Ionicons name="bar-chart" size={20} color={colors.primary} />
+              <Text style={styles.cardLabel}>Progreso por area</Text>
+            </View>
             {areaProgress.map((item) => (
-              <Text key={item.areaKey} style={styles.areaItem}>
-                {item.areaKey}: {item.completed}/{item.total} ({item.percent}%)
-              </Text>
+              <View key={item.areaKey} style={styles.row}>
+                <Ionicons name="checkmark-done-circle" size={18} color={colors.accent} />
+                <Text style={styles.areaItem}>
+                  {item.areaKey}: {item.completed}/{item.total} ({item.percent}%)
+                </Text>
+              </View>
             ))}
           </View>
         </>
@@ -102,50 +123,50 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 16,
-    gap: 10
+    padding: s.xl,
+    gap: s.md
   },
   heading: {
-    fontSize: 22,
-    fontWeight: '800',
+    ...t.h1,
     color: colors.primary
   },
   sub: {
-    fontSize: 14,
-    color: '#555'
+    ...t.caption,
+    color: colors.textSecondary
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: s.xl,
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-    gap: 6
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: s.sm
   },
   cardLabel: {
-    fontSize: 14,
-    color: '#555'
+    ...t.caption,
+    color: colors.textSecondary
   },
   cardValue: {
-    fontSize: 20,
-    fontWeight: '800',
+    ...t.h2,
     color: colors.accent
   },
   cardHint: {
-    fontSize: 13,
-    color: '#666'
+    ...t.small,
+    color: colors.textHint
   },
   areaItem: {
-    fontSize: 13,
-    color: '#2e2e2e'
+    ...t.caption,
+    color: colors.textPrimary
   },
   logout: {
-    marginTop: 8,
-    backgroundColor: '#d32f2f',
-    paddingVertical: 12,
+    marginTop: s.sm,
+    backgroundColor: colors.error,
+    paddingVertical: s.md,
     borderRadius: 10,
     alignItems: 'center'
   },

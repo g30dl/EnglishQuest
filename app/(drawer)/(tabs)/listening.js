@@ -1,16 +1,16 @@
-import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../../context/ProgressContext';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { theme } from '../../../lib/theme';
 
-const colors = {
-  primary: '#1B5E20',
-  accent: '#00C853',
-  background: '#E8F5E9'
-};
+const colors = theme.colors;
+const t = theme.typography;
+const s = theme.spacing;
 
 export default function ListeningScreen() {
   const router = useRouter();
-  const { areas, levels, lessons, levelNumber, loadingLessons, loadingQuestions } = useProgress();
+  const { areas, levels, lessons, levelNumber, loadingLessons, loadingQuestions, completedLessons } = useProgress();
 
   const areaId = 'listening';
   const area = areas.find((a) => a.id === areaId);
@@ -57,23 +57,53 @@ export default function ListeningScreen() {
               </Text>
             ) : (
               item.lessons.map((lesson) => (
-                <TouchableOpacity
+                <Pressable
                   key={lesson.id}
-                  style={[styles.lessonRow, !item.unlocked && styles.lessonRowLocked]}
+                  style={({ pressed }) => [
+                    styles.lessonRow,
+                    !item.unlocked && styles.lessonRowLocked,
+                    pressed && styles.cardPressed
+                  ]}
                   onPress={() => goToLesson(lesson.id, item.unlocked)}
                   disabled={!item.unlocked}
                 >
                   <View style={[styles.dot, !item.unlocked && styles.dotLocked]} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.lessonTitle, !item.unlocked && styles.lockedText]}>{lesson.title}</Text>
-                    <Text style={[styles.lessonMeta, !item.unlocked && styles.lockedText]}>
-                      Tipo: {lesson.type}
-                    </Text>
+                    <View style={styles.metaRow}>
+                      <Ionicons
+                        name={
+                          lesson.type === 'writing'
+                            ? 'create-outline'
+                            : lesson.type === 'listening'
+                              ? 'headset-outline'
+                              : 'book-outline'
+                        }
+                        size={18}
+                        color={
+                          lesson.type === 'listening'
+                            ? colors.area.listening
+                            : lesson.type === 'writing'
+                              ? colors.area.gramatica
+                              : colors.area.vocabulario
+                        }
+                      />
+                      <Text style={[styles.lessonMeta, !item.unlocked && styles.lockedText]}>{lesson.type}</Text>
+                    </View>
                   </View>
+                  {item.unlocked ? (
+                    completedLessons.includes(lesson.id) ? (
+                      <View style={styles.badgeDone}>
+                        <Ionicons name="checkmark" size={14} color="#fff" />
+                      </View>
+                    ) : null
+                  ) : (
+                    <Ionicons name="lock-closed" size={18} color="#888" />
+                  )}
                   <Text style={[styles.start, !item.unlocked && styles.lockedText]}>
                     {item.unlocked ? 'Iniciar' : 'Bloqueado'}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))
             )}
           </View>
@@ -88,33 +118,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 16,
-    gap: 10
+    padding: s.xl,
+    gap: s.md
   },
   heading: {
-    fontSize: 22,
-    fontWeight: '800',
+    ...t.h1,
     color: colors.primary
   },
   sub: {
-    fontSize: 14,
-    color: '#555'
+    ...t.caption,
+    color: colors.textSecondary
   },
   levelCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: s.xl,
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-    gap: 8
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: s.md
   },
   levelTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2e2e2e'
+    ...t.h3,
+    color: colors.textPrimary
   },
   levelHeader: {
     flexDirection: 'row',
@@ -123,20 +153,30 @@ const styles = StyleSheet.create({
   },
   levelCardLocked: {
     backgroundColor: '#f4f4f4',
-    borderColor: '#d0d0d0'
+    borderColor: colors.border
   },
   lockedBadge: {
-    fontSize: 12,
-    color: '#777'
+    ...t.small,
+    color: colors.textHint
   },
   lockedText: {
-    color: '#888'
+    color: colors.textHint
   },
   lessonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8
+    gap: s.md,
+    paddingVertical: s.md,
+    paddingHorizontal: s.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.surface
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s.sm
   },
   lessonRowLocked: {
     opacity: 0.6
@@ -148,23 +188,36 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent
   },
   dotLocked: {
-    backgroundColor: '#aaa'
+    backgroundColor: colors.textHint
   },
   lessonTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...t.h3,
     color: colors.primary
   },
   lessonMeta: {
-    fontSize: 13,
-    color: '#555'
+    ...t.caption,
+    color: colors.textSecondary
   },
   start: {
     color: colors.accent,
     fontWeight: '700'
   },
+  badgeDone: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  cardPressed: {
+    transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2
+  },
   empty: {
-    fontSize: 13,
-    color: '#666'
+    ...t.caption,
+    color: colors.textSecondary
   }
 });

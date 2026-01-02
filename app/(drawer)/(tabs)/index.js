@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../../context/ProgressContext';
 import { userService } from '../../../lib/userService';
+import { theme } from '../../../lib/theme';
 
 const colors = {
-  primary: '#1B5E20',
-  accent: '#00C853',
-  background: '#F5F7F4',
-  card: '#FFFFFF'
+  primary: theme.colors.primary,
+  accent: theme.colors.accent,
+  background: theme.colors.background,
+  card: theme.colors.surface
 };
+const t = theme.typography;
+const s = theme.spacing;
 
 const XP_PER_LEVEL = 500;
 
@@ -58,7 +61,7 @@ export default function HomeScreen() {
   }, [lessons, completedLessons]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: s.xl }}>
       <View style={styles.header}>
         <View style={styles.brand}>
           <View style={styles.logoDot} />
@@ -99,7 +102,10 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.cta} onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}>
+          <Pressable
+            style={({ pressed }) => [styles.cta, pressed && styles.cardPressed]}
+            onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}
+          >
             <View style={styles.ctaLeft}>
               <View style={styles.ctaIcon}>
                 <Ionicons name="rocket-outline" size={22} color="#fff" />
@@ -110,7 +116,7 @@ export default function HomeScreen() {
               </View>
             </View>
             <Ionicons name="chevron-forward" size={22} color="#fff" />
-          </TouchableOpacity>
+          </Pressable>
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Areas de estudio</Text>
@@ -119,9 +125,12 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.areaCard} onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}>
-            <View style={styles.areaIconBlue}>
-              <Ionicons name="book-outline" size={22} color="#fff" />
+          <Pressable
+            style={({ pressed }) => [styles.areaCard, pressed && styles.cardPressed]}
+            onPress={() => router.push('/(drawer)/(tabs)/vocabulario')}
+          >
+            <View style={[styles.areaIconBlue, { backgroundColor: theme.colors.area.vocabulario }]}>
+              <Ionicons name="book-outline" size={26} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.areaTitle}>Vocabulario</Text>
@@ -129,34 +138,57 @@ export default function HomeScreen() {
                 {areaStats.vocabulario.completed} lecciones completadas ({areaStats.vocabulario.percent}%)
               </Text>
             </View>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {areaStats.vocabulario.completed}/{areaStats.vocabulario.total || 0}
+              </Text>
+            </View>
             <Ionicons name="chevron-forward" size={20} color="#1B5E20" />
-          </TouchableOpacity>
+          </Pressable>
 
           <View style={styles.miniRow}>
-            <TouchableOpacity
-              style={[styles.miniCard, { backgroundColor: '#F3E8FF' }]}
+            <Pressable
+              style={({ pressed }) => [
+                styles.miniCard,
+                { borderColor: theme.colors.area.gramatica },
+                pressed && styles.cardPressed
+              ]}
               onPress={() => router.push('/(drawer)/(tabs)/gramatica')}
             >
-              <View style={[styles.miniIcon, { backgroundColor: '#A855F7' }]}>
-                <Ionicons name="pencil-outline" size={18} color="#fff" />
+              <View style={[styles.miniIcon, { backgroundColor: theme.colors.area.gramatica }]}>
+                <Ionicons name="pencil-outline" size={22} color="#fff" />
               </View>
               <Text style={styles.miniTitle}>Gramatica</Text>
               <Text style={styles.miniStat}>
                 {areaStats.gramatica.total} lecciones ({areaStats.gramatica.percent}% completadas)
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.miniCard, { backgroundColor: '#FFF4D6' }]}
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {areaStats.gramatica.completed}/{areaStats.gramatica.total || 0}
+                </Text>
+              </View>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.miniCard,
+                { borderColor: theme.colors.area.listening },
+                pressed && styles.cardPressed
+              ]}
               onPress={() => router.push('/(drawer)/(tabs)/listening')}
             >
-              <View style={[styles.miniIcon, { backgroundColor: '#F59E0B' }]}>
-                <Ionicons name="headset-outline" size={18} color="#fff" />
+              <View style={[styles.miniIcon, { backgroundColor: theme.colors.area.listening }]}>
+                <Ionicons name="headset-outline" size={22} color="#fff" />
               </View>
               <Text style={styles.miniTitle}>Listening</Text>
               <Text style={styles.miniStat}>
                 {areaStats.listening.completed} lecciones completadas ({areaStats.listening.percent}%)
               </Text>
-            </TouchableOpacity>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {areaStats.listening.completed}/{areaStats.listening.total || 0}
+                </Text>
+              </View>
+            </Pressable>
           </View>
         </>
       )}
@@ -168,7 +200,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 20
+    padding: s.xl
   },
   header: {
     flexDirection: 'row',
@@ -178,7 +210,7 @@ const styles = StyleSheet.create({
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8
+    gap: s.sm
   },
   logoDot: {
     width: 26,
@@ -187,25 +219,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary
   },
   brandText: {
-    fontSize: 24,
-    fontWeight: '800',
+    ...t.h2,
     color: colors.primary
   },
   profileCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
-    padding: 16,
+    padding: s.xl,
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-    gap: 12
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: s.md
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12
+    gap: s.md
   },
   avatar: {
     width: 56,
@@ -216,29 +249,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   greeting: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1B1B1B'
+    ...t.h3,
+    color: theme.colors.textPrimary
   },
   role: {
-    fontSize: 14,
-    color: '#5b5b5b'
+    ...t.caption,
+    color: theme.colors.textSecondary
   },
   xpPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#E8F5E9',
+    gap: s.sm,
+    backgroundColor: theme.colors.background,
     borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 10
+    paddingVertical: s.sm,
+    paddingHorizontal: s.md
   },
   xpText: {
     color: colors.primary,
     fontWeight: '700'
   },
   progressBlock: {
-    gap: 8
+    gap: s.sm
   },
   progressHeader: {
     flexDirection: 'row',
@@ -246,17 +278,17 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   progressTitle: {
-    fontSize: 14,
-    color: '#555'
+    ...t.caption,
+    color: theme.colors.textSecondary
   },
   progressLabel: {
-    fontSize: 14,
+    ...t.caption,
     fontWeight: '700',
     color: colors.primary
   },
   progressTrack: {
     height: 12,
-    backgroundColor: '#E6EDE4',
+    backgroundColor: theme.colors.background,
     borderRadius: 10,
     overflow: 'hidden'
   },
@@ -266,13 +298,13 @@ const styles = StyleSheet.create({
     borderRadius: 10
   },
   progressHint: {
-    fontSize: 13,
-    color: '#555'
+    ...t.small,
+    color: theme.colors.textSecondary
   },
   cta: {
     backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 16,
+    padding: s.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between'
@@ -280,35 +312,34 @@ const styles = StyleSheet.create({
   ctaLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12
+    gap: s.md
   },
   ctaIcon: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#0f3f16',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center'
   },
   ctaText: {
     color: '#fff',
-    fontWeight: '800',
-    fontSize: 16
+    ...t.h3
   },
   ctaSub: {
     color: '#d4f8dd',
-    fontSize: 13
+    ...t.caption
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4
+    marginTop: s.sm,
+    marginBottom: s.md
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1B1B1B'
+    ...t.h2,
+    color: theme.colors.textPrimary
   },
   sectionLink: {
     color: colors.primary,
@@ -316,43 +347,64 @@ const styles = StyleSheet.create({
   },
   areaCard: {
     backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: s.xl,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: s.md,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
   },
   areaIconBlue: {
     width: 44,
     height: 44,
-    borderRadius: 12,
-    backgroundColor: '#3B82F6',
+    borderRadius: 16,
+    backgroundColor: theme.colors.area.vocabulario,
     alignItems: 'center',
     justifyContent: 'center'
   },
   areaTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1B1B1B'
+    ...t.h3,
+    color: theme.colors.textPrimary
   },
   areaStat: {
-    fontSize: 13,
-    color: '#4B5563'
+    ...t.caption,
+    color: theme.colors.textSecondary
+  },
+  badge: {
+    backgroundColor: theme.colors.background,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border
+  },
+  badgeText: {
+    color: colors.primary,
+    fontWeight: '700',
+    fontSize: 12
   },
   miniRow: {
     flexDirection: 'row',
-    gap: 12
+    gap: s.md
   },
   miniCard: {
     flex: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 8
+    borderRadius: 16,
+    padding: s.xl,
+    gap: s.md,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
   },
   miniIcon: {
     width: 34,
@@ -362,12 +414,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   miniTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1B1B1B'
+    ...t.h3,
+    color: theme.colors.textPrimary
   },
   miniStat: {
-    fontSize: 13,
-    color: '#4B5563'
+    ...t.caption,
+    color: theme.colors.textSecondary
+  },
+  cardPressed: {
+    transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2
   }
 });

@@ -1,11 +1,10 @@
 import { StyleSheet, View, Text, Switch } from 'react-native';
 import { useState } from 'react';
+import { theme } from '../../lib/theme';
 
-const colors = {
-  primary: '#1B5E20',
-  accent: '#00C853',
-  background: '#E8F5E9'
-};
+const colors = theme.colors;
+const t = theme.typography;
+const s = theme.spacing;
 
 export default function ConfiguracionScreen() {
   const [notifications, setNotifications] = useState(true);
@@ -33,33 +32,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 16,
-    gap: 12
+    padding: s.xl,
+    gap: s.md
   },
   heading: {
-    fontSize: 22,
-    fontWeight: '800',
+    ...t.h1,
     color: colors.primary
   },
   sub: {
-    fontSize: 14,
-    color: '#555'
+    ...t.caption,
+    color: colors.textSecondary
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: s.xl,
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between'
   },
   label: {
-    fontSize: 16,
-    color: '#2e2e2e'
+    ...t.body,
+    color: colors.textPrimary
   }
 });
