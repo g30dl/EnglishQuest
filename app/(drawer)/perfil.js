@@ -170,7 +170,7 @@ export default function PerfilDrawerScreen() {
 
           <TouchableOpacity style={styles.logoutCard} onPress={handleLogout} activeOpacity={0.85}>
             <Ionicons name="log-out-outline" size={20} color={colors.error} />
-            <Text style={styles.logoutText}>Cerrar sesion</Text>
+            <Text style={styles.logoutText}>Cerrar sesión</Text>
           </TouchableOpacity>
         </ScrollView>
       )}

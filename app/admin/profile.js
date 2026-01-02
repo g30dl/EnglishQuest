@@ -1,8 +1,9 @@
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { supabase } from '../../lib/supabaseClient';
-import { useRouter } from 'expo-router';
-import { userService } from '../../lib/userService';
 import { useEffect, useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { supabase } from '../../lib/supabaseClient';
+import { userService } from '../../lib/userService';
 
 const colors = {
   primary: '#1B5E20',
@@ -20,8 +21,7 @@ export default function AdminProfile() {
     lessonsCompleted: 0,
     avgScore: 0,
     topFailures: [],
-    topUsers: [],
-    lessonTotals: []
+    topUsers: []
   });
 
   useEffect(() => {
@@ -115,8 +115,7 @@ export default function AdminProfile() {
           lessonsCompleted: completed,
           avgScore: Math.round(avgScore),
           topFailures,
-          topUsers,
-          lessonTotals
+          topUsers
         });
       } catch (err) {
         console.warn('No se pudieron cargar estadisticas', err.message);
@@ -134,73 +133,119 @@ export default function AdminProfile() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Perfil admin</Text>
-      <Text style={styles.text}>Gestiona tu cuenta y sesion.</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Perfil admin</Text>
+          <Text style={styles.text}>Gestiona cuenta, sesion y rendimiento.</Text>
+        </View>
+        <View style={styles.badge}>
+          <Ionicons name="shield-checkmark-outline" size={16} color="#fff" />
+          <Text style={styles.badgeText}>Activo</Text>
+        </View>
+      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Correo</Text>
-        <Text style={styles.value}>{email}</Text>
-        <Text style={styles.label}>Rol</Text>
-        <Text style={styles.value}>{role}</Text>
+      <View style={styles.cardRow}>
+        <View style={styles.infoCard}>
+          <View style={styles.infoHeader}>
+            <Ionicons name="person-outline" size={18} color={colors.primary} />
+            <Text style={styles.label}>Correo</Text>
+          </View>
+          <Text style={styles.value}>{email}</Text>
+          <Text style={styles.label}>Rol</Text>
+          <Text style={styles.value}>{role}</Text>
+        </View>
+        <View style={styles.infoCard}>
+          <View style={styles.infoHeader}>
+            <Ionicons name="people-outline" size={18} color={colors.primary} />
+            <Text style={styles.label}>Usuarios</Text>
+          </View>
+          <Text style={styles.value}>{stats.users}</Text>
+          <Text style={styles.label}>Promedio aciertos</Text>
+          <Text style={styles.value}>{stats.avgScore}%</Text>
+        </View>
+      </View>
+
+      <View style={styles.statsGrid}>
+        <View style={styles.metricCard}>
+          <Ionicons name="layers-outline" size={20} color={colors.primary} />
+          <Text style={styles.metricLabel}>Lecciones completadas</Text>
+          <Text style={styles.metricValue}>{stats.lessonsCompleted}</Text>
+        </View>
+        <View style={styles.metricCard}>
+          <Ionicons name="analytics-outline" size={20} color={colors.primary} />
+          <Text style={styles.metricLabel}>Promedio aciertos</Text>
+          <Text style={styles.metricValue}>{stats.avgScore}%</Text>
+        </View>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Usuarios registrados</Text>
-        <Text style={styles.value}>{stats.users}</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>Lecciones completadas</Text>
-        <Text style={styles.value}>{stats.lessonsCompleted}</Text>
-        <Text style={styles.label}>Promedio aciertos</Text>
-        <Text style={styles.value}>{stats.avgScore}%</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>Top reprobacion</Text>
+        <View style={styles.cardHeader}>
+          <Text style={styles.labelStrong}>Top reprobacion</Text>
+          {loading && <ActivityIndicator size="small" color={colors.primary} />}
+        </View>
         {loading ? (
           <Text style={styles.label}>Cargando...</Text>
         ) : stats.topFailures.length === 0 ? (
           <Text style={styles.label}>Sin datos</Text>
         ) : (
           stats.topFailures.map((item) => (
-            <Text key={item.lessonId} style={styles.value}>
-              {item.title}: {item.failRate}% fallos (intentos {item.attempts}
-              {typeof item.accuracy === 'number' ? `, aciertos ${item.accuracy}%` : ''})
-            </Text>
+            <View key={item.lessonId} style={styles.listRow}>
+              <View style={styles.bullet} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.value}>{item.title}</Text>
+                <Text style={styles.label}>
+                  {item.failRate}% fallos · {item.attempts} intentos
+                  {typeof item.accuracy === 'number' ? ` · aciertos ${item.accuracy}%` : ''}
+                </Text>
+              </View>
+            </View>
           ))
         )}
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>Usuarios mas activos</Text>
+        <View style={styles.cardHeader}>
+          <Text style={styles.labelStrong}>Usuarios mas activos</Text>
+          {loading && <ActivityIndicator size="small" color={colors.primary} />}
+        </View>
         {loading ? (
           <Text style={styles.label}>Cargando...</Text>
         ) : stats.topUsers.length === 0 ? (
           <Text style={styles.label}>Sin datos</Text>
         ) : (
           stats.topUsers.map((item) => (
-            <Text key={item.userId} style={styles.value}>
-              {item.userId}: {item.completed} completadas
-            </Text>
+            <View key={item.userId} style={styles.listRow}>
+              <Ionicons name="person-circle-outline" size={18} color={colors.primary} />
+              <Text style={styles.label}>{item.userId}</Text>
+              <Text style={styles.value}>{item.completed} completadas</Text>
+            </View>
           ))
         )}
       </View>
 
-      <TouchableOpacity style={styles.logout} onPress={handleLogout}>
+      <TouchableOpacity style={styles.logout} onPress={handleLogout} activeOpacity={0.85}>
+        <Ionicons name="log-out-outline" size={18} color="#fff" />
         <Text style={styles.logoutText}>Cerrar sesion</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background
+  },
+  content: {
     padding: 16,
-    gap: 12
+    gap: 14,
+    paddingBottom: 28
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
   },
   title: {
     fontSize: 22,
@@ -211,6 +256,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2e2e2e'
   },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.accent,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10
+  },
+  badgeText: {
+    color: '#fff',
+    fontWeight: '700'
+  },
+  cardRow: {
+    flexDirection: 'row',
+    gap: 10
+  },
+  infoCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -220,22 +301,76 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
-    gap: 6
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
   },
   label: {
     fontSize: 13,
     color: '#555'
+  },
+  labelStrong: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primary
   },
   value: {
     fontSize: 18,
     fontWeight: '800',
     color: colors.primary
   },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 10
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1
+  },
+  metricLabel: {
+    fontSize: 13,
+    color: '#555'
+  },
+  metricValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.primary
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  bullet: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accent
+  },
   logout: {
     backgroundColor: '#d32f2f',
     paddingVertical: 12,
     borderRadius: 10,
-    alignItems: 'center'
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 8
   },
   logoutText: {
     color: '#fff',
