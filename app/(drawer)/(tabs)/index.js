@@ -62,19 +62,19 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: s.xl }}>
-      <View style={styles.header}>
-        <View style={styles.brand}>
-          <View style={styles.logoDot} />
-          <Text style={styles.brandText}>EnglishQuest</Text>
-        </View>
-      </View>
-
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
       ) : (
         <>
+          <View style={styles.header}>
+            <View style={styles.brand}>
+              <View style={styles.logoDot} />
+              <Text style={styles.brandText}>EnglishQuest</Text>
+            </View>
+          </View>
+
           <View style={styles.profileCard}>
             <View style={styles.profileHeader}>
               <View style={styles.avatar}>
@@ -213,13 +213,14 @@ const styles = StyleSheet.create({
     gap: s.sm
   },
   logoDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: colors.primary
   },
   brandText: {
-    ...t.h2,
+    fontSize: 26,
+    fontWeight: '800',
     color: colors.primary
   },
   profileCard: {
@@ -241,20 +242,21 @@ const styles = StyleSheet.create({
     gap: s.md
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#E0F2E9',
     alignItems: 'center',
     justifyContent: 'center'
   },
   greeting: {
-    ...t.h3,
+    fontSize: 20,
+    fontWeight: '800',
     color: theme.colors.textPrimary
   },
   role: {
-    ...t.caption,
-    color: theme.colors.textSecondary
+    fontSize: 12,
+    color: '#888'
   },
   xpPill: {
     flexDirection: 'row',
@@ -262,12 +264,13 @@ const styles = StyleSheet.create({
     gap: s.sm,
     backgroundColor: theme.colors.background,
     borderRadius: 20,
-    paddingVertical: s.sm,
-    paddingHorizontal: s.md
+    paddingVertical: s.md,
+    paddingHorizontal: s.lg
   },
   xpText: {
     color: colors.primary,
-    fontWeight: '700'
+    fontWeight: '800',
+    fontSize: 14
   },
   progressBlock: {
     gap: s.sm
@@ -278,36 +281,43 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   progressTitle: {
-    ...t.caption,
+    fontSize: 15,
+    fontWeight: '700',
     color: theme.colors.textSecondary
   },
   progressLabel: {
-    ...t.caption,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: colors.primary
   },
   progressTrack: {
-    height: 12,
+    height: 14,
     backgroundColor: theme.colors.background,
     borderRadius: 10,
     overflow: 'hidden'
   },
   progressFill: {
-    height: 12,
+    height: 14,
     backgroundColor: colors.accent,
     borderRadius: 10
   },
   progressHint: {
-    ...t.small,
+    fontSize: 12,
     color: theme.colors.textSecondary
   },
   cta: {
     backgroundColor: colors.primary,
     borderRadius: 16,
-    padding: s.xl,
+    paddingVertical: 18,
+    paddingHorizontal: s.xl,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6
   },
   ctaLeft: {
     flexDirection: 'row',
@@ -315,16 +325,17 @@ const styles = StyleSheet.create({
     gap: s.md
   },
   ctaIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center'
   },
   ctaText: {
     color: '#fff',
-    ...t.h3
+    fontSize: 18,
+    fontWeight: '900'
   },
   ctaSub: {
     color: '#d4f8dd',
@@ -351,7 +362,7 @@ const styles = StyleSheet.create({
     padding: s.xl,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: s.md,
+    gap: 16,
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
@@ -361,15 +372,16 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0'
   },
   areaIconBlue: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 20,
     backgroundColor: theme.colors.area.vocabulario,
     alignItems: 'center',
     justifyContent: 'center'
   },
   areaTitle: {
-    ...t.h3,
+    fontSize: 18,
+    fontWeight: '800',
     color: theme.colors.textPrimary
   },
   areaStat: {
@@ -391,7 +403,7 @@ const styles = StyleSheet.create({
   },
   miniRow: {
     flexDirection: 'row',
-    gap: s.md
+    gap: 16
   },
   miniCard: {
     flex: 1,

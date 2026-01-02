@@ -3,12 +3,11 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabaseClient';
 import { userService } from '../../lib/userService';
+import { theme } from '../../lib/theme';
 
-const colors = {
-  primary: '#1B5E20',
-  accent: '#00C853',
-  background: '#E8F5E9'
-};
+const colors = theme.colors;
+const t = theme.typography;
+const s = theme.spacing;
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -43,8 +42,8 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>EnglishQuest</Text>
-        <Text style={styles.subtitle}>Inicia sesion para continuar</Text>
+        <Text style={styles.title}>Iniciar sesión</Text>
+        <Text style={styles.subtitle}>Accede a tu cuenta para continuar</Text>
 
         <Text style={styles.label}>Correo</Text>
         <TextInput
@@ -85,48 +84,49 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16
+    padding: s.xl
   },
   card: {
     width: '100%',
     maxWidth: 380,
     backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 20,
+    borderRadius: 18,
+    padding: s.xl,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: colors.border
   },
   title: {
-    fontSize: 26,
-    fontWeight: '800',
+    ...t.h1,
     color: colors.primary
   },
   subtitle: {
-    fontSize: 15,
-    color: '#555',
-    marginBottom: 16
+    ...t.caption,
+    color: colors.textSecondary,
+    marginBottom: s.lg
   },
   label: {
-    fontSize: 13,
-    color: '#555',
-    marginTop: 10
+    ...t.caption,
+    color: colors.textSecondary,
+    marginTop: s.md
   },
   input: {
     borderWidth: 1,
     borderColor: '#d8e5d8',
     borderRadius: 10,
-    padding: 12,
+    padding: s.md,
     backgroundColor: '#fff',
-    marginTop: 6
+    marginTop: s.xs
   },
   button: {
-    marginTop: 20,
+    marginTop: s.xl,
     backgroundColor: colors.accent,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: s.md,
+    borderRadius: 12,
     alignItems: 'center'
   },
   buttonText: {
@@ -136,10 +136,10 @@ const styles = StyleSheet.create({
   },
   error: {
     color: '#d32f2f',
-    marginTop: 10
+    marginTop: s.sm
   },
   linkButton: {
-    marginTop: 12,
+    marginTop: s.md,
     alignItems: 'center'
   },
   linkText: {

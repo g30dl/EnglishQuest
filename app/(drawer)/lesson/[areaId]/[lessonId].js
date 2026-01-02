@@ -212,8 +212,6 @@ export default function LessonRunnerScreen() {
             : 'Intenta de nuevo';
     return (
       <View style={styles.container}>
-        <Text style={styles.heading}>Resultado</Text>
-
         <View style={styles.resultCard}>
           <View style={styles.circleContainer}>
             <View style={[styles.progressOuter, { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }]}>
@@ -297,9 +295,6 @@ export default function LessonRunnerScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>{lesson.title}</Text>
-      <Text style={styles.sub}>Tipo: {lesson.type}</Text>
-
       <Text style={styles.progressTitle}>Pregunta {index + 1} de {total}</Text>
       <View style={styles.progressTrack}>
         <Animated.View
@@ -341,18 +336,27 @@ export default function LessonRunnerScreen() {
         <Text style={styles.prompt}>{currentQuestion.prompt}</Text>
 
         {currentQuestion.type === 'listening' && (
-          <TouchableOpacity style={styles.speakButton} onPress={handleSpeak}>
-            <View style={styles.speakContent}>
+          <View style={styles.audioCard}>
+            <TouchableOpacity style={styles.playButton} onPress={handleSpeak}>
               <Ionicons
-                name={speaking ? 'volume-high' : 'play-circle-outline'}
-                size={22}
-                color={speaking ? colors.accent : colors.primary}
+                name={speaking ? 'pause' : 'play'}
+                size={28}
+                color="#fff"
               />
-              <Text style={[styles.speakText, speaking && { color: colors.accent }]}>
-                {speaking ? 'Reproduciendo...' : 'Reproducir audio'}
-              </Text>
+            </TouchableOpacity>
+            <View style={styles.waveRow}>
+              {Array.from({ length: 16 }).map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.waveBar,
+                    { height: 6 + ((i % 4) + 1) * 4, opacity: speaking ? 1 : 0.6 }
+                  ]}
+                />
+              ))}
             </View>
-          </TouchableOpacity>
+            <Text style={styles.audioTimer}>{speaking ? 'Reproduciendo...' : '00:00'}</Text>
+          </View>
         )}
 
         {currentQuestion.type === 'writing' ? (
@@ -363,15 +367,21 @@ export default function LessonRunnerScreen() {
             onChangeText={setWrittenAnswer}
           />
         ) : (
-          currentQuestion.options?.map((opt, optIndex) => (
-            <TouchableOpacity
-              key={optIndex}
-              style={[styles.option, selectedOption === optIndex && styles.optionSelected]}
-              onPress={() => setSelectedOption(optIndex)}
-            >
-              <Text style={styles.optionText}>{opt}</Text>
-            </TouchableOpacity>
-          ))
+          currentQuestion.options?.map((opt, optIndex) => {
+            const active = selectedOption === optIndex;
+            return (
+              <TouchableOpacity
+                key={optIndex}
+                style={[styles.option, active && styles.optionSelected]}
+                onPress={() => setSelectedOption(optIndex)}
+              >
+                <View style={[styles.radio, active && styles.radioActive]}>
+                  {active ? <View style={styles.radioDot} /> : null}
+                </View>
+                <Text style={[styles.optionText, active && { color: colors.primary }]}>{opt}</Text>
+              </TouchableOpacity>
+            );
+          })
         )}
         {feedback.status === 'correct' && (
           <Animated.View style={[styles.feedbackRow, { transform: [{ scale: scaleAnim }] }]}>
@@ -438,7 +448,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: 12,
-    padding: 14,
+    padding: 16,
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -466,17 +476,40 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   option: {
-    padding: 12,
-    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border
+    borderColor: colors.border,
+    backgroundColor: colors.surface
   },
   optionSelected: {
     borderColor: colors.accent,
     backgroundColor: colors.background
   },
   optionText: {
-    color: colors.textPrimary
+    color: colors.textPrimary,
+    fontSize: 16
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.textSecondary,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  radioActive: {
+    borderColor: colors.accent
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.accent
   },
   speakButton: {
     padding: 12,
@@ -493,6 +526,43 @@ const styles = StyleSheet.create({
   speakText: {
     color: colors.primary,
     fontWeight: '700'
+  },
+  audioCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    gap: 12
+  },
+  playButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4
+  },
+  waveRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 4,
+    height: 40
+  },
+  waveBar: {
+    width: 4,
+    borderRadius: 2,
+    backgroundColor: colors.accent
+  },
+  audioTimer: {
+    fontSize: 12,
+    color: colors.textSecondary
   },
   input: {
     borderWidth: 1,
