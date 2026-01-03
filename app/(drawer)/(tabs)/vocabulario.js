@@ -1,10 +1,10 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useProgress } from '../../../context/ProgressContext';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { theme } from '../../../lib/theme';
+import { LessonCard, LevelCard } from '../../../components';
 
-const t = theme.typography;
+const colors = theme.colors;
 const s = theme.spacing;
 
 export default function VocabularioScreen() {
@@ -30,7 +30,6 @@ export default function VocabularioScreen() {
 
   return (
     <View style={styles.container}>
-
       {(loadingLessons || loadingQuestions) && (
         <View style={{ paddingVertical: 12 }}>
           <ActivityIndicator color={colors.primary} size="small" />
@@ -42,69 +41,23 @@ export default function VocabularioScreen() {
         showsVerticalScrollIndicator={false}
       >
         {groupedByLevel.map((item) => (
-          <View key={item.id} style={[styles.levelCard, !item.unlocked && styles.levelCardLocked]}>
-            <View style={styles.levelHeader}>
-              <Text style={[styles.levelTitle, !item.unlocked && styles.lockedText]}>{item.name}</Text>
-              {!item.unlocked && (
-                <Text style={styles.lockedBadge}>Se desbloquea en nivel {item.order || item.level}</Text>
-              )}
-            </View>
-            {item.lessons.length === 0 ? (
-              <Text style={styles.empty}>
-                {loadingLessons ? 'Cargando lecciones...' : 'Sin lecciones disponibles en este nivel.'}
-              </Text>
-            ) : (
-              item.lessons.map((lesson) => (
-                <Pressable
-                  key={lesson.id}
-                  style={({ pressed }) => [
-                    styles.lessonRow,
-                    !item.unlocked && styles.lessonRowLocked,
-                    completedLessons.includes(lesson.id) && styles.lessonRowCompleted,
-                    pressed && styles.cardPressed
-                  ]}
-                  onPress={() => goToLesson(lesson.id, item.unlocked)}
-                  disabled={!item.unlocked}
-                >
-                  <View style={[styles.dot, !item.unlocked && styles.dotLocked]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.lessonTitle, !item.unlocked && styles.lockedText]}>{lesson.title}</Text>
-                    <View style={styles.metaRowWrap}>
-                      <View style={styles.metaRow}>
-                        <Ionicons
-                          name={
-                            lesson.type === 'writing'
-                              ? 'create-outline'
-                              : lesson.type === 'listening'
-                                ? 'headset-outline'
-                                : 'book-outline'
-                          }
-                          size={18}
-                          color={lesson.type === 'listening' ? '#F59E0B' : lesson.type === 'writing' ? '#7C3AED' : '#2563EB'}
-                        />
-                        <Text style={[styles.lessonMeta, !item.unlocked && styles.lockedText]}>{lesson.type}</Text>
-                      </View>
-                      <View style={styles.xpPill}>
-                        <Text style={styles.xpText}>+{lesson.xp_reward ?? lesson.xp ?? 0} XP</Text>
-                      </View>
-                    </View>
-                  </View>
-                  {item.unlocked ? (
-                    completedLessons.includes(lesson.id) ? (
-                      <View style={styles.badgeDone}>
-                        <Ionicons name="checkmark" size={14} color="#fff" />
-                      </View>
-                    ) : null
-                  ) : (
-                    <Ionicons name="lock-closed" size={18} color="#888" />
-                  )}
-                  <Text style={[styles.start, !item.unlocked && styles.lockedText]}>
-                    {item.unlocked ? 'Iniciar' : 'Bloqueado'}
-                  </Text>
-                </Pressable>
-              ))
+          <LevelCard
+            key={item.id}
+            level={item}
+            lessons={item.lessons}
+            loading={loadingLessons}
+            completedLessonIds={completedLessons}
+            onLessonPress={goToLesson}
+            renderLesson={(lesson, unlocked) => (
+              <LessonCard
+                key={lesson.id}
+                lesson={lesson}
+                unlocked={unlocked}
+                completed={completedLessons.includes(lesson.id)}
+                onPress={(lessonId) => goToLesson(lessonId, unlocked)}
+              />
             )}
-          </View>
+          />
         ))}
       </ScrollView>
     </View>
@@ -117,136 +70,5 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     padding: s.xl,
     gap: s.md
-  },
-  heading: {
-    ...t.h1,
-    color: theme.colors.primary,
-    textAlign: 'center'
-  },
-  sub: {
-    ...t.caption,
-    color: theme.colors.textSecondary,
-    textAlign: 'center'
-  },
-  levelCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    padding: s.xl,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    gap: s.sm
-  },
-  levelTitle: {
-    ...t.h3,
-    color: theme.colors.textPrimary
-  },
-  levelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: s.sm
-  },
-  levelCardLocked: {
-    backgroundColor: '#f4f4f4',
-    borderColor: theme.colors.border
-  },
-  lockedBadge: {
-    ...t.small,
-    color: theme.colors.textHint
-  },
-  lockedText: {
-    color: theme.colors.textHint
-  },
-  lessonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s.md,
-    paddingVertical: s.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 12,
-    paddingHorizontal: s.md,
-    backgroundColor: theme.colors.surface
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s.sm
-  },
-  metaRowWrap: {
-    marginTop: s.xs,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: s.md
-  },
-  lessonRowLocked: {
-    opacity: 0.6
-  },
-  lessonRowCompleted: {
-    borderColor: theme.colors.accent,
-    borderWidth: 1.5,
-    backgroundColor: '#E8F5E9'
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.accent
-  },
-  dotLocked: {
-    backgroundColor: theme.colors.textHint
-  },
-  lessonTitle: {
-    ...t.h3,
-    color: theme.colors.primary
-  },
-  lessonMeta: {
-    ...t.caption,
-    color: theme.colors.textSecondary
-  },
-  xpPill: {
-    backgroundColor: theme.colors.accent,
-    paddingVertical: s.xs,
-    paddingHorizontal: s.md,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2
-  },
-  xpText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 10
-  },
-  start: {
-    color: theme.colors.accent,
-    fontWeight: '800',
-    fontSize: 15
-  },
-  badgeDone: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: theme.colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  cardPressed: {
-    transform: [{ scale: 0.98 }],
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2
-  },
-  empty: {
-    ...t.caption,
-    color: theme.colors.textSecondary
   }
 });
