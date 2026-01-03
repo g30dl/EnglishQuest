@@ -9,10 +9,9 @@ const s = theme.spacing;
 
 export default function ListeningScreen() {
   const router = useRouter();
-  const { areas, levels, lessons, levelNumber, loadingLessons, loadingQuestions, completedLessons } = useProgress();
+  const { levels, lessons, levelNumber, loadingLessons, loadingQuestions, completedLessons } = useProgress();
 
   const areaId = 'listening';
-  const area = areas.find((a) => a.id === areaId);
   const levelsByArea = levels
     .filter((lvl) => lvl.areaId === areaId)
     .sort((a, b) => (a.order || 0) - (b.order || 0));

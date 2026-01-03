@@ -10,10 +10,9 @@ const s = theme.spacing;
 
 export default function GramaticaScreen() {
   const router = useRouter();
-  const { areas, levels, lessons, levelNumber, loadingLessons, loadingQuestions, completedLessons } = useProgress();
+  const { levels, lessons, levelNumber, loadingLessons, loadingQuestions, completedLessons } = useProgress();
 
   const areaId = 'gramatica';
-  const area = areas.find((a) => a.id === areaId);
   const levelsByArea = levels
     .filter((lvl) => lvl.areaId === areaId)
     .sort((a, b) => (a.order || 0) - (b.order || 0));

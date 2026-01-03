@@ -540,22 +540,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: colors.accent
   },
-  speakButton: {
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background
-  },
-  speakContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8
-  },
-  speakText: {
-    color: colors.primary,
-    fontWeight: '700'
-  },
   audioCard: {
     backgroundColor: colors.surface,
     borderRadius: 16,
@@ -606,33 +590,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center'
   },
-  primaryBtn: {
-    backgroundColor: colors.accent
-  },
-  secondaryBtn: {
-    backgroundColor: '#f0f4f0',
-    borderWidth: 1,
-    borderColor: '#cfe9cf'
-  },
-  secondaryBtnText: {
-    color: colors.primary
-  },
   buttonText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 16
-  },
-  score: {
-    fontSize: 32,
-    fontWeight: '800'
-  },
-  result: {
-    fontSize: 16,
-    color: colors.textPrimary
-  },
-  xpText: {
-    color: '#fff',
-    fontWeight: '900',
     fontSize: 16
   },
   progressBlock: {
