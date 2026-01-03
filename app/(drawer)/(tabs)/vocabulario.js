@@ -13,12 +13,12 @@ export default function VocabularioScreen() {
 
   const areaId = 'vocabulario';
   const area = areas.find((a) => a.id === areaId);
-  const levelsByArea = levels.filter((lvl) => lvl.areaId === areaId).sort((a, b) => (a.order || 0) - (b.order || 0));
+  const levelsByArea = levels
+    .filter((lvl) => lvl.areaId === areaId)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   const groupedByLevel = levelsByArea.map((lvl) => {
-    const lessonList = lessons.filter(
-      (ls) => ls.areaId === areaId && ((ls.level || ls.order) === (lvl.order || lvl.level))
-    );
+    const lessonList = lessons.filter((ls) => ls.areaId === areaId && ls.level === (lvl.order || lvl.level));
     const unlocked = (lvl.order || 1) <= levelNumber;
     return { ...lvl, unlocked, lessons: lessonList };
   });

@@ -22,6 +22,7 @@ export default function AdminHome() {
   const avgQuestions = lessons.length ? Math.round(questions.length / lessons.length) : 0;
   const avgLessons = levels.length ? Math.round(lessons.length / levels.length) : 0;
 
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.hero}>
@@ -212,6 +213,27 @@ const styles = StyleSheet.create({
   actionText: {
     fontWeight: '700',
     color: colors.primary
+  },
+  diagnosticButton: {
+    marginTop: 8,
+    backgroundColor: '#E8F0FF',
+    borderColor: '#C7D7FF'
+  },
+  warningCard: {
+    backgroundColor: '#FFF4E5',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#FFD8A8',
+    gap: 6
+  },
+  warningTitle: {
+    fontWeight: '800',
+    color: '#b26b00'
+  },
+  warningText: {
+    color: '#b26b00',
+    fontSize: 13
   }
 });
 

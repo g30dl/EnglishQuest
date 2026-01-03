@@ -12,6 +12,7 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useProgress } from '../../context/ProgressContext';
 import { AREAS, AREA_COLORS } from '../../lib/constants';
+import { supabase } from '../../lib/supabaseClient';
 
 const colors = {
   primary: '#1B5E20',
@@ -71,6 +72,7 @@ export default function AdminContentScreen() {
   const [expandedLesson, setExpandedLesson] = useState(null);
   const scrollRef = useRef(null);
   const [levelModal, setLevelModal] = useState({ visible: false, areaId: null, name: '', order: '' });
+  const [editQuestionModal, setEditQuestionModal] = useState(null);
 
   const lessonsByAreaLevel = useMemo(() => {
     const map = {};
@@ -132,7 +134,9 @@ export default function AdminContentScreen() {
     const name = levelModal.name?.trim() || `Nivel ${order}`;
 
     if (existingOrders.includes(order)) {
-      setMessage(`Ya existe un nivel ${order} en ${levelModal.areaId}. Usa otro numero.`);
+      const msg = `Ya existe un nivel ${order} en ${levelModal.areaId}. Usa otro numero.`;
+      setMessage(msg);
+      Alert.alert('Nivel duplicado', msg);
       return;
     }
 
@@ -149,6 +153,19 @@ export default function AdminContentScreen() {
   const handleCreateLesson = async () => {
     if (!createForm.title.trim()) {
       setMessage('Escribe un titulo para la leccion');
+      return;
+    }
+    const targetLevels = levels.filter(
+      (lvl) =>
+        (lvl.areaId === createForm.areaId || lvl.area === createForm.areaId) &&
+        Number(lvl.order || lvl.level || 0) === Number(createForm.level)
+    );
+    if (targetLevels.length === 0) {
+      setMessage(`No existe un nivel ${createForm.level} en ${createForm.areaId}. Crea el nivel primero.`);
+      return;
+    }
+    if (targetLevels.length > 1) {
+      setMessage(`Hay multiples niveles con numero ${createForm.level} en ${createForm.areaId}. Arregla los duplicados primero.`);
       return;
     }
     const result = await addLesson({
@@ -264,6 +281,44 @@ export default function AdminContentScreen() {
     }
   };
 
+  const handleUpdateQuestion = async () => {
+    if (!editQuestionModal) return;
+    if (!questionForm.prompt.trim()) {
+      setMessage('Escribe un prompt para la pregunta');
+      return;
+    }
+    const isWriting = questionForm.type === 'writing';
+    const opts = isWriting
+      ? null
+      : questionForm.options
+          .split(',')
+          .map((o) => o.trim())
+          .filter(Boolean);
+    const payload = {
+      question_type: questionForm.type,
+      question_text: questionForm.prompt.trim(),
+      options: opts,
+      correct_answer: isWriting ? questionForm.answerText.trim() : undefined,
+      answer_index: isWriting ? null : Number(questionForm.answerIndex),
+      audio_text: questionForm.type === 'listening' ? questionForm.prompt.trim() : undefined
+    };
+    const { error } = await supabase.from('questions').update(payload).eq('id', editQuestionModal.questionId);
+    if (error) {
+      setMessage(error.message || 'No se pudo actualizar la pregunta');
+      return;
+    }
+    setMessage('Pregunta actualizada');
+    setEditQuestionModal(null);
+    setQuestionForm({
+      prompt: '',
+      type: 'reading',
+      options: '',
+      answerIndex: '',
+      answerText: ''
+    });
+    reload?.();
+  };
+
   const renderLessons = (areaId, lvl) => {
     const lessonList = lessonsByAreaLevel[`${areaId}-${lvl.order}`] || [];
     if (lessonList.length === 0) {
@@ -330,6 +385,20 @@ export default function AdminContentScreen() {
                       ) : (
                         <Text style={styles.metaPill}>Opcion multiple</Text>
                       )}
+                      <TouchableOpacity
+                        onPress={() => {
+                          setEditQuestionModal({ lessonId: lesson.id, questionId: q.id });
+                          setQuestionForm({
+                            prompt: q.prompt,
+                            type: q.type,
+                            options: Array.isArray(q.options) ? q.options.join(', ') : '',
+                            answerIndex: q.answerIndex !== undefined ? String(q.answerIndex) : '',
+                            answerText: q.answerText || ''
+                          });
+                        }}
+                      >
+                        <Ionicons name="create-outline" size={16} color={colors.primary} />
+                      </TouchableOpacity>
                       <Ionicons name="trash-outline" size={16} color="#d32f2f" />
                     </View>
                   </View>
@@ -365,9 +434,7 @@ export default function AdminContentScreen() {
           <TouchableOpacity style={styles.areaHeader} onPress={() => toggleArea(areaId)}>
             <View style={styles.areaTitleRow}>
               <View style={[styles.areaDot, { backgroundColor: AREA_COLORS[areaId] || colors.primary }]} />
-              <Text style={styles.areaTitle}>
-                {areaId.toUpperCase()} ({(areaLevels[areaId] || []).length} niveles, {areaLessonCount[areaId] || 0} lecciones)
-              </Text>
+              <Text style={styles.areaTitle}>{areaId.toUpperCase()}</Text>
             </View>
             <Ionicons
               name={expandedAreas[areaId] ? 'chevron-up' : 'chevron-down'}
@@ -723,6 +790,72 @@ export default function AdminContentScreen() {
                 style={styles.saveButton}
                 onPress={() => createQuestionModal && handleAddQuestion(createQuestionModal)}
               >
+                <Text style={styles.saveText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={!!editQuestionModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.heading}>Editar pregunta</Text>
+              <TouchableOpacity onPress={() => setEditQuestionModal(null)} hitSlop={10}>
+                <Ionicons name="close" size={22} color="#555" />
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Prompt"
+              value={questionForm.prompt}
+              onChangeText={(t) => setQuestionForm((prev) => ({ ...prev, prompt: t }))}
+            />
+            <View style={styles.formRow}>
+              {['reading', 'writing', 'listening'].map((opt) => (
+                <TouchableOpacity
+                  key={opt}
+                  style={[
+                    styles.chip,
+                    questionForm.type === opt && styles.chipActive,
+                    questionForm.type === opt && { backgroundColor: typeColors[opt] }
+                  ]}
+                  onPress={() => setQuestionForm((prev) => ({ ...prev, type: opt }))}
+                >
+                  <Text style={[styles.chipText, questionForm.type === opt && styles.chipTextActive]}>{opt}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {questionForm.type === 'writing' ? (
+              <TextInput
+                style={styles.input}
+                placeholder="Respuesta texto"
+                value={questionForm.answerText}
+                onChangeText={(t) => setQuestionForm((prev) => ({ ...prev, answerText: t }))}
+              />
+            ) : (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Opciones separadas por coma"
+                  value={questionForm.options}
+                  onChangeText={(t) => setQuestionForm((prev) => ({ ...prev, options: t }))}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Indice de respuesta (0 basado)"
+                  value={questionForm.answerIndex}
+                  onChangeText={(t) => setQuestionForm((prev) => ({ ...prev, answerIndex: t }))}
+                  keyboardType="numeric"
+                />
+              </>
+            )}
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setEditQuestionModal(null)}>
+                <Text style={styles.cancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleUpdateQuestion}>
                 <Text style={styles.saveText}>Guardar</Text>
               </TouchableOpacity>
             </View>

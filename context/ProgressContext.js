@@ -62,22 +62,19 @@ export function ProgressProvider({ children }) {
       .map((row) => {
         const areaId = normalizeArea(row.area);
         const levelNum = row.level || row.order_index || 1;
-        const levelId = `lvl-${areaId}-${levelNum}`;
         console.log('hydrateLessons: mapped', {
           id: row.id,
           title: row.title,
           area: row.area,
           areaId,
-          levelNum,
-          levelId
+          levelNum
         });
         return {
           id: row.id,
-          levelId,
-          title: row.title,
-          type: row.type || row.question_type || 'reading',
           areaId,
           level: levelNum,
+          title: row.title,
+          type: row.type || row.question_type || 'reading',
           xp_reward: row.xp_reward || XP_PER_LESSON,
           order: row.order_index || 0,
           description: row.description || ''
@@ -130,16 +127,15 @@ export function ProgressProvider({ children }) {
     const parsed = rows.map((row) => {
       const areaId = normalizeArea(row.area);
       const orderNum = row.order_index || row.level || 1;
-      const levelId = row.id || `lvl-${areaId}-${orderNum}`;
       console.log('hydrateLevels: mapped', {
-        id: levelId,
+        id: row.id,
         area: row.area,
         areaId,
         order: orderNum,
         name: row.name
       });
       return {
-        id: levelId,
+        id: row.id,
         areaId,
         name: row.name || `Nivel ${orderNum}`,
         order: orderNum
@@ -465,11 +461,10 @@ export function ProgressProvider({ children }) {
           ...prev,
           {
             id: data.id,
-            levelId: `lvl-${areaId}-${levelVal}`,
-            title: data.title,
-            type: data.type || 'reading',
             areaId,
             level: levelVal,
+            title: data.title,
+            type: data.type || 'reading',
             xp_reward: data.xp_reward || XP_PER_LESSON,
             order: data.order_index || 0,
             description: data.description || ''
@@ -498,11 +493,10 @@ export function ProgressProvider({ children }) {
             ls.id === id
               ? {
                   id: data.id,
-                  levelId: `lvl-${areaId}-${levelVal}`,
-                  title: data.title,
-                  type: data.type || 'reading',
                   areaId,
                   level: levelVal,
+                  title: data.title,
+                  type: data.type || 'reading',
                   xp_reward: data.xp_reward || XP_PER_LESSON,
                   order: data.order_index || 0,
                   description: data.description || ''
@@ -536,6 +530,11 @@ export function ProgressProvider({ children }) {
   const addQuestion = useCallback(
     async (payload) => {
       try {
+        console.log('CREANDO PREGUNTA:', {
+          lessonId: payload.lessonId,
+          type: payload.type,
+          prompt: payload.prompt?.substring(0, 50)
+        });
         const { data, error } = await supabase
           .from('questions')
           .insert({
@@ -552,6 +551,19 @@ export function ProgressProvider({ children }) {
           .single();
 
         if (error) throw error;
+
+        console.log(`Pregunta creada con ID: ${data.id}, asociada a leccion: ${data.lesson_id}`);
+        const { data: verification } = await supabase
+          .from('questions')
+          .select('id, lesson_id')
+          .eq('id', data.id)
+          .single();
+        if (verification?.lesson_id !== payload.lessonId) {
+          console.error('ERROR: lesson_id cambio despues de insertar', {
+            esperado: payload.lessonId,
+            obtenido: verification?.lesson_id
+          });
+        }
 
         setQuestions((prev) => [
           ...prev,

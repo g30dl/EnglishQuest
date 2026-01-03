@@ -11,16 +11,18 @@ const colors = {
 export default function AreaDetailScreen() {
   const { areaId } = useLocalSearchParams();
   const router = useRouter();
-  const { areas, levels, lessons, unlockedLevels } = useProgress();
+  const { areas, levels, lessons, levelNumber } = useProgress();
 
   const area = areas.find((a) => a.id === areaId);
-  const availableLevels = unlockedLevels.filter((lvl) => lvl.areaId === areaId);
-  const availableLessons = lessons.filter((ls) => availableLevels.some((lvl) => lvl.id === ls.levelId));
+  const levelsByArea = levels
+    .filter((lvl) => lvl.areaId === areaId)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  const groupedByLevel = availableLevels.map((lvl) => ({
-    ...lvl,
-    lessons: availableLessons.filter((ls) => ls.levelId === lvl.id)
-  }));
+  const groupedByLevel = levelsByArea.map((lvl) => {
+    const lessonList = lessons.filter((ls) => ls.areaId === areaId && ls.level === (lvl.order || lvl.level));
+    const unlocked = (lvl.order || 1) <= levelNumber;
+    return { ...lvl, unlocked, lessons: lessonList };
+  });
 
   const goToLesson = (lessonId) => {
     router.push(`/lesson/${areaId}/${lessonId}`);
@@ -41,13 +43,13 @@ export default function AreaDetailScreen() {
               <Text style={styles.empty}>Sin lecciones disponibles en este nivel.</Text>
             ) : (
               item.lessons.map((lesson) => (
-                <TouchableOpacity key={lesson.id} style={styles.lessonRow} onPress={() => goToLesson(lesson.id)}>
+                <TouchableOpacity key={lesson.id} style={styles.lessonRow} onPress={() => goToLesson(lesson.id)} disabled={!item.unlocked}>
                   <View style={styles.dot} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.lessonTitle}>{lesson.title}</Text>
                     <Text style={styles.lessonMeta}>Tipo: {lesson.type}</Text>
                   </View>
-                  <Text style={styles.start}>Iniciar</Text>
+                  <Text style={styles.start}>{item.unlocked ? 'Iniciar' : 'Bloqueado'}</Text>
                 </TouchableOpacity>
               ))
             )}
