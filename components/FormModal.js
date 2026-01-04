@@ -14,6 +14,7 @@ const { colors, spacing: s, typography: t } = theme;
  * @param {React.ReactNode} props.children
  * @param {boolean} [props.saveDisabled]
  */
+// Modal generico para formularios de creacion/edicion con acciones de guardar/cancelar.
 export function FormModal({ visible, title, onClose, onSave, children, saveDisabled = false }) {
   return (
     <Modal
@@ -116,4 +117,3 @@ const styles = StyleSheet.create({
     opacity: 0.6
   }
 });
-

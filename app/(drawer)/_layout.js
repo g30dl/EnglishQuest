@@ -13,6 +13,7 @@ const colors = {
   background: '#E8F5E9'
 };
 
+// Contenido personalizado del drawer; carga datos del usuario y maneja navegacion.
 function CustomDrawerContent(props) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState('Usuario');
@@ -30,11 +31,13 @@ function CustomDrawerContent(props) {
     };
   }, []);
 
+  // Navega a la ruta pedida y cierra el drawer.
   const goTo = (path) => {
     router.push(path);
     props.navigation.closeDrawer();
   };
 
+  // Cierra sesion en Supabase y envia a pantalla de login.
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.replace('/(auth)/login');
@@ -70,6 +73,7 @@ function CustomDrawerContent(props) {
   );
 }
 
+// Layout del drawer principal; define las pantallas protegidas y estilos.
 export default function DrawerLayout() {
   return (
     <Drawer

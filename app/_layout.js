@@ -6,6 +6,7 @@ import { ProgressProvider } from '../context/ProgressContext';
 import { supabase } from '../lib/supabaseClient';
 import { userService } from '../lib/userService';
 
+// Layout raiz que hidrata la sesion y enruta segun autenticacion y rol.
 export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
@@ -16,6 +17,7 @@ export default function RootLayout() {
   useEffect(() => {
     let mounted = true;
 
+    // Lee usuario actual y sesion de Supabase para preparar el estado inicial.
     const hydrateUser = async () => {
       const { user, role: derivedRole } = await userService.getCurrentUser();
       if (!mounted) return;
@@ -49,6 +51,7 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === '(auth)';
     const inAdmin = segments.includes('admin');
 
+    // Redirige dinamicamente segun si hay sesion y rol detectado.
     if (!session && !inAuthGroup) {
       router.replace('/(auth)/login');
       return;

@@ -5,6 +5,7 @@ const colors = {
   background: '#E8F5E9'
 };
 
+// Stack de pantallas publicas (login/registro) con cabecera consistente.
 export default function AuthLayout() {
   return (
     <Stack

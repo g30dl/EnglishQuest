@@ -6,6 +6,7 @@ const colors = theme.colors;
 const t = theme.typography;
 const s = theme.spacing;
 
+// Pantalla de ajustes basicos con toggles locales.
 export default function ConfiguracionScreen() {
   const [notifications, setNotifications] = useState(true);
   const [sound, setSound] = useState(true);

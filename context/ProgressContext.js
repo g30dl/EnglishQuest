@@ -10,6 +10,7 @@ const XP_PER_LEVEL = 500;
 
 const ProgressContext = createContext(null);
 
+// Normaliza ids de area para evitar variaciones de texto.
 const normalizeArea = (area) => {
   if (!area) return 'vocabulario';
   const lower = area.toLowerCase();
@@ -20,6 +21,7 @@ const normalizeArea = (area) => {
   return found || 'vocabulario';
 };
 
+// Proveedor centralizado que maneja niveles, lecciones, preguntas y progreso de usuario.
 export function ProgressProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [loadingAreas, setLoadingAreas] = useState(false);
@@ -38,6 +40,7 @@ export function ProgressProvider({ children }) {
   const [currentUserId, setCurrentUserId] = useState(null);
   const channelRef = useRef(null);
 
+  // Calcula nivel actual y XP restante hacia el siguiente nivel.
   const computeXpMeta = useCallback((totalXp) => {
     const lv = Math.floor(totalXp / XP_PER_LEVEL) + 1;
     const remainder = totalXp % XP_PER_LEVEL;
@@ -45,6 +48,7 @@ export function ProgressProvider({ children }) {
     return { lv, toNext };
   }, []);
 
+  // Limpia y ordena registros de lecciones provenientes de Supabase.
   const hydrateLessons = useCallback((rows) => {
     if (!rows?.length) return [];
     return rows
@@ -66,6 +70,7 @@ export function ProgressProvider({ children }) {
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   }, []);
 
+  // Ajusta los datos de preguntas para el consumo del front.
   const hydrateQuestions = useCallback((rows) => {
     if (!rows?.length) return [];
     return rows.map((row) => {
@@ -87,6 +92,7 @@ export function ProgressProvider({ children }) {
     });
   }, []);
 
+  // Genera los niveles con estado desbloqueado segun el nivel del usuario.
   const hydrateLevels = useCallback((rows, userLevel) => {
     if (!rows?.length) return [];
     const parsed = rows.map((row) => {
@@ -104,6 +110,7 @@ export function ProgressProvider({ children }) {
       .map((lvl) => ({ ...lvl, unlocked: (lvl.order || 1) <= (userLevel || 1) }));
   }, []);
 
+  // Carga datos de usuario, progreso y catalogos desde Supabase.
   const loadUserData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -195,6 +202,7 @@ export function ProgressProvider({ children }) {
     }
   }, [computeXpMeta, hydrateLevels, hydrateLessons, hydrateQuestions]);
 
+  // Inicializa datos y se suscribe a cambios en supabase/auth y tablas relevantes.
   useEffect(() => {
     loadUserData();
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -237,6 +245,7 @@ export function ProgressProvider({ children }) {
     };
   }, [loadUserData]);
 
+  // Incrementa XP localmente y persiste en Supabase.
   const addXp = useCallback(
     async (amount) => {
       let updatedXp = xp;
@@ -267,6 +276,7 @@ export function ProgressProvider({ children }) {
     [computeXpMeta, currentUserId, xp]
   );
 
+  // Marca una leccion como completada, asigna XP y registra progreso.
   const completeLesson = useCallback(
     async (lessonId, scorePercent = 0, attempts = 1) => {
       setCompletedLessons((prev) => {
@@ -324,6 +334,7 @@ export function ProgressProvider({ children }) {
     [addXp, currentUserId, lessons]
   );
 
+  // Registra respuesta de pregunta y otorga XP por aciertos.
   const answerQuestion = useCallback(
     async ({ questionId, userAnswer, isCorrect }) => {
       if (isCorrect) {
@@ -350,13 +361,16 @@ export function ProgressProvider({ children }) {
     [addXp, currentUserId]
   );
 
+  // Niveles a los que el usuario tiene acceso segun su nivel actual.
   const unlockedLevels = useMemo(
     () => levels.filter((lvl) => (lvl.order || 0) <= levelNumber),
     [levels, levelNumber]
   );
 
+  // Busca una leccion en cache local por id.
   const lessonById = useCallback((lessonId) => lessons.find((ls) => ls.id === lessonId), [lessons]);
 
+  // Crea un nuevo nivel en Supabase y lo agrega al estado local.
   const addLevel = useCallback(
     async (payload) => {
       try {
@@ -386,6 +400,7 @@ export function ProgressProvider({ children }) {
     [levelNumber]
   );
 
+  // Crea una leccion a traves del crudService y la incorpora al estado.
   const addLesson = useCallback(
     async (payload) => {
       try {
@@ -420,6 +435,7 @@ export function ProgressProvider({ children }) {
     []
   );
 
+  // Actualiza una leccion existente y sincroniza el estado local.
   const updateLesson = useCallback(
     async (id, payload) => {
       try {
@@ -453,6 +469,7 @@ export function ProgressProvider({ children }) {
     []
   );
 
+  // Elimina una leccion y limpia las referencias locales.
   const deleteLesson = useCallback(
     async (id) => {
       try {
@@ -468,6 +485,7 @@ export function ProgressProvider({ children }) {
     []
   );
 
+  // Inserta una pregunta y recarga datos para reflejarla en pantalla.
   const addQuestion = useCallback(
     async (payload) => {
       try {
@@ -587,6 +605,7 @@ export function ProgressProvider({ children }) {
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>;
 }
 
+// Hook de conveniencia para consumir el contexto de progreso.
 export function useProgress() {
   const ctx = useContext(ProgressContext);
   if (!ctx) {

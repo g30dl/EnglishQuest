@@ -11,6 +11,7 @@ const colors = {
   background: '#E8F5E9'
 };
 
+// Perfil del administrador con estadisticas agregadas de la plataforma.
 export default function AdminProfile() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -24,13 +25,19 @@ export default function AdminProfile() {
     topUsers: []
   });
 
+  // Hidrata datos de usuario y estadisticas de uso; redirige si no es admin.
   useEffect(() => {
-    userService.getCurrentUser().then(({ user, role }) => {
+    let mounted = true;
+    const init = async () => {
+      const { user, role } = await userService.getCurrentUser();
+      if (!mounted) return;
+      if (role !== 'admin') {
+        router.replace('/(drawer)/(tabs)');
+        return;
+      }
       setEmail(user?.email || '');
       setRole(role || 'admin');
-    });
 
-    const fetchStats = async () => {
       setLoading(true);
       try {
         const [
@@ -48,9 +55,9 @@ export default function AdminProfile() {
         ]);
 
         const completed = (progressData || []).filter((p) => p.is_completed).length;
-        const avgScore =
-          (progressData || []).reduce((sum, p) => sum + (p.score || 0), 0) /
-          Math.max((progressData || []).length, 1);
+        const totalAnswers = (answersData || []).length;
+        const correctAnswers = (answersData || []).filter((a) => a.is_correct).length;
+        const avgScore = totalAnswers ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
 
         const questionLesson = {};
         (questionsData || []).forEach((q) => {
@@ -110,6 +117,7 @@ export default function AdminProfile() {
           .sort((a, b) => b.completed - a.completed)
           .slice(0, 5);
 
+        if (!mounted) return;
         setStats({
           users: usersCount || 0,
           lessonsCompleted: completed,
@@ -118,15 +126,19 @@ export default function AdminProfile() {
           topUsers
         });
       } catch (err) {
-        console.warn('No se pudieron cargar estadisticas', err.message);
+        if (mounted) console.warn('No se pudieron cargar estadisticas', err.message);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
-    fetchStats();
-  }, []);
+    init();
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
+  // Cierra sesion y vuelve al login publico.
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.replace('/(auth)/login');
@@ -214,13 +226,16 @@ export default function AdminProfile() {
         ) : stats.topUsers.length === 0 ? (
           <Text style={styles.label}>Sin datos</Text>
         ) : (
-          stats.topUsers.map((item) => (
-            <View key={item.userId} style={styles.listRow}>
-              <Ionicons name="person-circle-outline" size={18} color={colors.primary} />
-              <Text style={styles.label}>{item.userId}</Text>
-              <Text style={styles.value}>{item.completed} completadas</Text>
-            </View>
-          ))
+          stats.topUsers.map((item) => {
+            const maskedId = item.userId ? `${String(item.userId).slice(0, 4)}...${String(item.userId).slice(-4)}` : 'usuario';
+            return (
+              <View key={item.userId} style={styles.listRow}>
+                <Ionicons name="person-circle-outline" size={18} color={colors.primary} />
+                <Text style={styles.label}>{maskedId}</Text>
+                <Text style={styles.value}>{item.completed} completadas</Text>
+              </View>
+            );
+          })
         )}
       </View>
 

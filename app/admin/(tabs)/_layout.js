@@ -7,6 +7,7 @@ const colors = {
   accent: '#00C853'
 };
 
+// Tabs para el dashboard administrativo.
 export default function AdminTabsLayout() {
   return (
     <Tabs

@@ -7,6 +7,7 @@ const colors = {
   background: '#E8F5E9'
 };
 
+// Navegacion principal inferior para estudiantes.
 export default function TabsLayout() {
   return (
     <Tabs

@@ -13,6 +13,7 @@ const { colors, spacing: s, typography: t } = theme;
  * @param {number} [props.height]
  * @param {boolean} [props.animated]
  */
+// Barra de progreso reutilizable con animacion opcional y porcentaje.
 export const ProgressBar = memo(function ProgressBar({
   current,
   total,
@@ -30,6 +31,7 @@ export const ProgressBar = memo(function ProgressBar({
   const widthAnim = useRef(new Animated.Value(progressValue)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Sincroniza la animacion del ancho y un ligero pulso cuando cambia el progreso.
   useEffect(() => {
     const toValue = progressValue;
     if (animated) {
@@ -126,4 +128,3 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   }
 });
-

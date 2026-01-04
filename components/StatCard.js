@@ -12,6 +12,7 @@ const { colors, spacing: s, typography: t } = theme;
  * @param {string} props.label
  * @param {string|number} props.value
  */
+// Tarjeta compacta para mostrar una estadistica numerica con icono.
 export function StatCard({ icon, iconColor = colors.primary, label, value }) {
   return (
     <View style={styles.card}>
@@ -55,4 +56,3 @@ const styles = StyleSheet.create({
     color: colors.textPrimary
   }
 });
-

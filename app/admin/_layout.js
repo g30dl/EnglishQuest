@@ -13,6 +13,7 @@ const colors = {
   background: '#E8F5E9'
 };
 
+// Drawer admin: carga datos del usuario y expone navegacion a secciones de admin.
 function CustomDrawerContent(props) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState('Admin');
@@ -30,11 +31,13 @@ function CustomDrawerContent(props) {
     };
   }, []);
 
+  // Navega a la ruta y cierra el drawer.
   const goTo = (path) => {
     router.push(path);
     props.navigation.closeDrawer();
   };
 
+  // Cierra sesion y envia a login publico.
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.replace('/(auth)/login');
@@ -71,6 +74,7 @@ function CustomDrawerContent(props) {
   );
 }
 
+// Layout del area administrativa protegido por drawer.
 export default function AdminLayout() {
   return (
     <Drawer

@@ -13,6 +13,7 @@ const { colors, typography: t, spacing: s } = theme;
  * @param {(lessonId: string) => void} props.onPress
  * @param {boolean} [props.showXP]
  */
+// Tarjeta individual de leccion; muestra tipo, XP y estado de bloqueo/completado.
 export const LessonCard = memo(function LessonCard({ lesson, unlocked, completed, onPress, showXP = true }) {
   const xpValue = lesson?.xp_reward ?? lesson?.xp ?? 0;
   const typeColor = useMemo(() => {
@@ -181,4 +182,3 @@ const styles = StyleSheet.create({
     color: colors.textHint
   }
 });
-

@@ -25,6 +25,7 @@ const SECONDARY = '#2E7D5F';
 const ACCENT = '#00D37F';
 const logo = require('../../assets/logo/logo.png');
 
+// Pantalla de registro que crea el usuario en Supabase y guarda su perfil.
 export default function RegisterScreen() {
   const router = useRouter();
   const headerHeight = useMemo(() => {
@@ -42,6 +43,7 @@ export default function RegisterScreen() {
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+  // Valida un campo individual y propaga el mensaje de error.
   const validateField = (field, value) => {
     let message = '';
 
@@ -65,6 +67,7 @@ export default function RegisterScreen() {
     return message;
   };
 
+  // Ejecuta la validacion completa del formulario.
   const validateAll = () => {
     const nextErrors = {
       fullName: validateField('fullName', fullName),
@@ -74,6 +77,7 @@ export default function RegisterScreen() {
     return !Object.values(nextErrors).some(Boolean);
   };
 
+  // Registra al usuario, crea el registro en tabla users y redirige segun rol.
   const handleRegister = async () => {
     setError(null);
     const isValid = validateAll();
@@ -125,6 +129,7 @@ export default function RegisterScreen() {
 
   const passwordSecurityColor = password.length >= 6 ? PRIMARY : '#FFA000';
 
+  // Genera el patron decorativo del encabezado.
   const renderDots = () => {
     const dots = [];
     for (let i = 0; i < 24; i += 1) {

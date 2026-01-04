@@ -19,6 +19,7 @@ const areaPalette = {
   speak: '#A78BFA'
 };
 
+// Pantalla de perfil dentro del drawer; muestra resumen de progreso y permite cerrar sesion.
 export default function PerfilDrawerScreen() {
   const router = useRouter();
   const { lessons, completedLessons, loading } = useProgress();
@@ -30,6 +31,7 @@ export default function PerfilDrawerScreen() {
     fetchProfile();
   }, []);
 
+  // Recupera datos del perfil en tabla users y los guarda en estado local.
   const fetchProfile = async () => {
     setFetching(true);
     const { user } = await userService.getCurrentUser();
@@ -52,6 +54,7 @@ export default function PerfilDrawerScreen() {
     setFetching(false);
   };
 
+  // Calcula progreso por area (total y porcentaje completado).
   const areaProgress = useMemo(() => {
     const totals = lessons.reduce((acc, ls) => {
       const key = ls.area || ls.areaId || 'area';
@@ -75,6 +78,7 @@ export default function PerfilDrawerScreen() {
       });
   }, [lessons, completedLessons]);
 
+  // Confirma y ejecuta el cierre de sesion en Supabase.
   const handleLogout = async () => {
     Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
       { text: 'Cancelar', style: 'cancel' },

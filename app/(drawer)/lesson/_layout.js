@@ -5,6 +5,7 @@ const colors = {
   background: '#E8F5E9'
 };
 
+// Stack para pantallas de lecciones individuales.
 export default function LessonLayout() {
   return (
     <Stack

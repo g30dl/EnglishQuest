@@ -19,6 +19,7 @@ const { colors, typography: t, spacing: s } = theme;
  * @param {(lessonId: string, unlocked: boolean) => void} [props.onLessonPress]
  * @param {string[]} [props.completedLessonIds]
  */
+// Tarjeta que agrupa un nivel y sus lecciones, mostrando estados y acciones.
 export const LevelCard = memo(function LevelCard({
   level,
   lessons = [],

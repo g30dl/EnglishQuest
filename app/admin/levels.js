@@ -32,6 +32,7 @@ const typeColors = {
   listening: '#F97316'
 };
 
+// Pantalla de administracion para crear/editar niveles, lecciones y preguntas.
 export default function AdminContentScreen() {
   const {
     levels,
@@ -117,9 +118,12 @@ export default function AdminContentScreen() {
     return map;
   }, [lessons]);
 
+  // Expande o colapsa una seccion de area.
   const toggleArea = (id) => setExpandedAreas((prev) => ({ ...prev, [id]: !prev[id] }));
+  // Expande o colapsa un nivel dentro de un area.
   const toggleLevel = (id) => setExpandedLevels((prev) => ({ ...prev, [id]: !prev[id] }));
 
+  // Crea un nivel nuevo con el siguiente orden disponible.
   const handleAddLevel = async () => {
     if (!levelModal.areaId) {
       setLevelModal({ visible: false, areaId: null, name: '', order: '' });
@@ -150,6 +154,7 @@ export default function AdminContentScreen() {
     }
   };
 
+  // Inserta una nueva leccion en el area/nivel seleccionados.
   const handleCreateLesson = async () => {
     if (!createForm.title.trim()) {
       setMessage('Escribe un titulo para la leccion');
@@ -186,6 +191,7 @@ export default function AdminContentScreen() {
     }
   };
 
+  // Prepara el modal de edicion con los datos de la leccion actual.
   const handleEditOpen = (lesson) => {
     setEditLessonModal({
       id: lesson.id,
@@ -198,6 +204,7 @@ export default function AdminContentScreen() {
     });
   };
 
+  // Guarda los cambios de una leccion editada.
   const handleUpdateLesson = async () => {
     if (!editLessonModal?.title?.trim()) {
       setMessage('El titulo es requerido');
@@ -220,6 +227,7 @@ export default function AdminContentScreen() {
     }
   };
 
+  // Solicita confirmacion y elimina la leccion elegida.
   const handleDeleteLesson = (lesson) => {
     const qCount = questionsByLesson[lesson.id]?.length || 0;
     Alert.alert(
@@ -244,6 +252,7 @@ export default function AdminContentScreen() {
     );
   };
 
+  // Crea una pregunta vinculada a la leccion indicada.
   const handleAddQuestion = async (lessonId) => {
     if (!questionForm.prompt.trim()) {
       setMessage('Escribe un prompt para la pregunta');
@@ -281,6 +290,7 @@ export default function AdminContentScreen() {
     }
   };
 
+  // Actualiza la pregunta que se esta editando en el modal.
   const handleUpdateQuestion = async () => {
     if (!editQuestionModal) return;
     if (!questionForm.prompt.trim()) {
@@ -319,6 +329,7 @@ export default function AdminContentScreen() {
     reload?.();
   };
 
+  // Renderiza las lecciones de un nivel junto con sus preguntas.
   const renderLessons = (areaId, lvl) => {
     const lessonList = lessonsByAreaLevel[`${areaId}-${lvl.order}`] || [];
     if (lessonList.length === 0) {
@@ -427,6 +438,7 @@ export default function AdminContentScreen() {
     });
   };
 
+  // Vista principal en arbol (area > nivel > lecciones).
   const renderListView = () => (
     <View style={[styles.section, { gap: 12, paddingBottom: 16 }]}>
       {AREAS.map((areaId) => (

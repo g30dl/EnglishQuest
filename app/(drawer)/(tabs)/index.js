@@ -17,6 +17,7 @@ const s = theme.spacing;
 
 const XP_PER_LEVEL = 500;
 
+// Pantalla de inicio del estudiante: muestra progreso general y accesos rapidos.
 export default function HomeScreen() {
   const router = useRouter();
   const { xp, levelNumber, xpToNextLevel, lessons, completedLessons, loading } = useProgress();
@@ -27,6 +28,7 @@ export default function HomeScreen() {
   const [roleLabel, setRoleLabel] = useState('Explorador');
   const [streakDays, setStreakDays] = useState(0);
 
+  // Recupera datos basicos del usuario para personalizar los textos.
   useEffect(() => {
     let mounted = true;
     userService.getCurrentUser().then(({ user, profile, role }) => {
@@ -41,6 +43,7 @@ export default function HomeScreen() {
     };
   }, []);
 
+  // Calcula estadisticas por area (total/completadas/porcentaje).
   const areaStats = useMemo(() => {
     const base = {
       vocabulario: { total: 0, completed: 0 },

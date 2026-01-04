@@ -8,6 +8,7 @@ const colors = {
   background: '#E8F5E9'
 };
 
+// Vista que lista los niveles y lecciones de un area concreta.
 export default function AreaDetailScreen() {
   const { areaId } = useLocalSearchParams();
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function AreaDetailScreen() {
     return { ...lvl, unlocked, lessons: lessonList };
   });
 
+  // Navega a la pantalla de la leccion seleccionada.
   const goToLesson = (lessonId) => {
     router.push(`/lesson/${areaId}/${lessonId}`);
   };

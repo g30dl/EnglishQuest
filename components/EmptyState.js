@@ -13,6 +13,7 @@ const { colors, spacing: s, typography: t } = theme;
  * @param {string} [props.actionText]
  * @param {() => void} [props.onAction]
  */
+// Bloque reutilizable para mostrar listas vacias con accion opcional.
 export function EmptyState({ icon = 'information-circle-outline', title, message, actionText, onAction }) {
   return (
     <View style={styles.container}>
@@ -70,4 +71,3 @@ const styles = StyleSheet.create({
     fontWeight: '800'
   }
 });
-

@@ -9,6 +9,7 @@ const colors = {
   background: '#E8F5E9'
 };
 
+// Panel principal de admin con estadisticas resumidas.
 export default function AdminHome() {
   const { levels, lessons, questions } = useProgress();
 

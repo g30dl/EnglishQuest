@@ -27,6 +27,7 @@ const SECONDARY = '#2E7D5F';
 const ACCENT = '#00D37F';
 const logo = require('../../assets/logo/logo.png');
 
+// Pantalla de inicio de sesion con validaciones basicas y redireccion por rol.
 export default function LoginScreen() {
   const router = useRouter();
   const headerHeight = useMemo(() => {
@@ -43,6 +44,7 @@ export default function LoginScreen() {
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+  // Valida un campo individual y almacena el mensaje de error.
   const validateField = (field, value) => {
     let message = '';
     if (field === 'email') {
@@ -60,6 +62,7 @@ export default function LoginScreen() {
     return message;
   };
 
+  // Ejecuta la validacion completa del formulario.
   const validateAll = () => {
     const nextErrors = {
       email: validateField('email', email),
@@ -68,6 +71,7 @@ export default function LoginScreen() {
     return !Object.values(nextErrors).some(Boolean);
   };
 
+  // Intenta autenticar al usuario y redirige segun su rol.
   const handleLogin = async () => {
     setError(null);
     const isValid = validateAll();
@@ -93,6 +97,7 @@ export default function LoginScreen() {
     setLoading(false);
   };
 
+  // Genera el patron decorativo del encabezado.
   const renderDots = () => {
     const dots = [];
     for (let i = 0; i < 24; i += 1) {

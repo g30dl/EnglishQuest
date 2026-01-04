@@ -15,6 +15,7 @@ const { colors, spacing: s, typography: t } = theme;
  * @param {boolean} props.showFeedback
  * @param {boolean|null} props.isCorrect
  */
+// Renderiza una pregunta con opciones o campo de escritura y feedback visual.
 export const QuestionCard = memo(function QuestionCard({
   question,
   selectedOption,
@@ -24,6 +25,7 @@ export const QuestionCard = memo(function QuestionCard({
   showFeedback,
   isCorrect
 }) {
+  // Opciones multiple choice con seleccion y estilos activos.
   const renderOptions = () => {
     if (!question?.options) return null;
     return question.options.map((opt, idx) => {
@@ -44,6 +46,7 @@ export const QuestionCard = memo(function QuestionCard({
     });
   };
 
+  // Muestra icono de correcto/incorrecto cuando se pide retroalimentacion.
   const renderFeedback = () => {
     if (!showFeedback || isCorrect === null || isCorrect === undefined) return null;
     const icon = isCorrect ? 'checkmark-circle-outline' : 'close-circle-outline';
@@ -177,4 +180,3 @@ const styles = StyleSheet.create({
     fontWeight: '800'
   }
 });
-

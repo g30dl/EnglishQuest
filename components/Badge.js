@@ -20,6 +20,7 @@ const variants = {
  * @param {string} [props.icon]
  * @param {() => void} [props.onPress]
  */
+// Insignia pequeña con variantes de color y accion opcional.
 export function Badge({ children, variant = 'neutral', icon, onPress }) {
   const palette = variants[variant] || variants.neutral;
   const Wrapper = onPress ? Pressable : View;
@@ -55,4 +56,3 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   }
 });
-

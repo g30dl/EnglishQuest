@@ -9,6 +9,7 @@ import { theme } from '../../../../lib/theme';
 const colors = theme.colors;
 const t = theme.typography;
 
+// Convierte segundos a formato mm:ss para mostrar tiempos.
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60)
     .toString()
@@ -19,6 +20,7 @@ const formatTime = (seconds) => {
   return `${mins}:${secs}`;
 };
 
+// Pantalla que ejecuta una leccion: muestra preguntas, anima feedback y guarda progreso.
 export default function LessonRunnerScreen() {
   const { areaId, lessonId } = useLocalSearchParams();
   const router = useRouter();
@@ -62,6 +64,12 @@ export default function LessonRunnerScreen() {
 
   useEffect(() => {
     startTimeRef.current = Date.now();
+    setIndex(0);
+    setCorrectCount(0);
+    setFinished(false);
+    completedRef.current = false;
+    resetSelection();
+    setSubmitting(false);
   }, [lessonId]);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -78,6 +86,7 @@ export default function LessonRunnerScreen() {
     });
   }, [percent, progressAnim, pulseAnim]);
 
+  // Limpia selecciones y estados de feedback entre preguntas.
   const resetSelection = () => {
     setSelectedOption(null);
     setWrittenAnswer('');
@@ -87,6 +96,7 @@ export default function LessonRunnerScreen() {
     bgAnim.setValue(0);
   };
 
+  // Evalua la respuesta, muestra feedback y avanza de manera segura.
   const handleAnswer = async () => {
     if (!currentQuestion) return;
     if (submitting) return;
@@ -135,6 +145,7 @@ export default function LessonRunnerScreen() {
     });
 
     // Pausa breve para mostrar feedback
+    // Espera breve para que el usuario vea el feedback antes de avanzar.
     setTimeout(async () => {
       const nextIndex = index + 1;
       if (nextIndex < total) {
@@ -154,6 +165,7 @@ export default function LessonRunnerScreen() {
     }, 1200);
   };
 
+  // Reproduce el texto en voz para preguntas de listening.
   const handleSpeak = () => {
     if (!currentQuestion) return;
     const text = currentQuestion.audioText || currentQuestion.prompt || '';
