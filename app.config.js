@@ -8,7 +8,8 @@ export default ({ config }) => ({
   ...config,
   extra: {
     ...config.extra,
-    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-    supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_KEY
+    // Prioritize env vars when available, otherwise keep values from app.json
+    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || config.extra?.supabaseUrl,
+    supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_KEY || config.extra?.supabaseKey
   }
 });

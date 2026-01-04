@@ -58,24 +58,6 @@ export default function AdminHome() {
         </View>
       </View>
 
-      <View style={styles.quickActions}>
-        <Text style={styles.sectionTitle}>Accesos rapidos</Text>
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="create-outline" size={18} color={colors.primary} />
-            <Text style={styles.actionText}>Crear nivel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="library-outline" size={18} color={colors.primary} />
-            <Text style={styles.actionText}>Crear leccion</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="help-circle-outline" size={18} color={colors.primary} />
-            <Text style={styles.actionText}>Crear pregunta</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
     </ScrollView>
   );
 }
@@ -180,39 +162,6 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 18,
     fontWeight: '800',
-    color: colors.primary
-  },
-  quickActions: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    gap: 10
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.primary
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap'
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    backgroundColor: '#EEF7EF',
-    borderWidth: 1,
-    borderColor: '#D7EBDD'
-  },
-  actionText: {
-    fontWeight: '700',
     color: colors.primary
   },
   diagnosticButton: {
